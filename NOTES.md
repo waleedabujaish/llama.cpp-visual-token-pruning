@@ -96,6 +96,36 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   steady-state and the *refined* Amdahl ceiling pessimistic. Quantify by
   amortizing over a persistent process if it starts to matter.
 
+## Phase 1 (offline Python) — provenance
+
+- venv: torch 2.13.0 (MPS), transformers 5.14.1, datasets 5.0.0, numpy 2.5.1,
+  safetensors 0.8.0, pillow 12.3.0.
+- HF reference model: `llava-hf/llava-1.5-7b-hf`, snapshot
+  `b234b804b114d9e37bb655e11cbbb5f5e971b7a9` (fp16 safetensors, computed in
+  fp32 for the bug-verification reference).
+- llama.cpp embeddings dumped via ctypes against the pinned build's dylibs
+  (`scripts/phase1/dump_llamacpp_embd.py`); layouts transcribed from headers
+  at commit e8f19cc0 and validated at runtime against
+  `mtmd_context_params_default()`; dump cross-validated against the CLI's
+  `MTMD_DEBUG_EMBEDDINGS` output (token-0 values identical to 6 decimals).
+- Bug-verification input: `assets/phase1/cat_336.png` (336×336 PNG, lossless,
+  resize no-op on both pipelines; sha256
+  `e42c7ea7c89d69541a7ab27ebdcf75272790529be5e59c759150a17021e561c0`).
+- Expected numerical floor: F16 mmproj + FA fp16 K/V casts + ggml quick-gelu
+  LUT vs fp32 reference keeps even the true-matching variant at ~0.998-0.999
+  mean cosine, not 1.0. Verdicts use an absolute threshold (0.99) + margin.
+- TextVQA sim: `lmms-lab/textvqa` validation, first 200 samples in streaming
+  order (196 carried a "Reference OCR token" line, matching the official
+  LLaVA-1.5 eval format); vicuna_v1 prompt; greedy, max 16 new tokens;
+  fp16 on MPS (text=sdpa, vision=eager); soft VQA accuracy (leave-one-out,
+  VQAv2-style normalization — simplified on some punctuation edge cases,
+  applied identically to predictions and ground truth). n=200 gives roughly
+  ±3.5pp standard error per cell; cross-ratio comparisons are paired on the
+  same samples.
+- Pruning semantics in all Phase 1 code = FasterVLM: scores =
+  `attentions[-2][:, :, 0, 1:].mean(heads)`, features = `hidden_states[-2][:, 1:]`,
+  top-K via boolean mask (original spatial order preserved).
+
 ## Run protocol
 
 - Per cell: 1 warm-up run (discarded) + ≥5 timed runs (G0 used 6);
