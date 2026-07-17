@@ -21,13 +21,16 @@ Usage:
 import argparse
 import ctypes as C
 import json
+import os
 from pathlib import Path
 
 import numpy as np
 from PIL import Image
 
-BIN_DIR = Path.home() / "Desktop/vtp/llama.cpp/build/bin"
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+# llama.cpp checkout: $LLAMA_CPP_DIR, or a sibling clone of this repo
+LLAMA_CPP = Path(os.environ.get("LLAMA_CPP_DIR", REPO_ROOT.parent / "llama.cpp"))
+BIN_DIR = LLAMA_CPP / "build/bin"
 
 MTMD_INPUT_CHUNK_TYPE_TEXT = 0
 MTMD_INPUT_CHUNK_TYPE_IMAGE = 1

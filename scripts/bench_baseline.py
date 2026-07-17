@@ -26,6 +26,7 @@ import argparse
 import datetime
 import hashlib
 import json
+import os
 import platform
 import re
 import statistics
@@ -128,8 +129,9 @@ def mean_std(xs):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--bin", default=str(Path.home() / "Desktop/vtp/llama.cpp/build/bin/llama-mtmd-cli"))
-    ap.add_argument("--llama-repo", default=str(Path.home() / "Desktop/vtp/llama.cpp"))
+    llama_cpp_dir = os.environ.get("LLAMA_CPP_DIR", str(REPO_ROOT.parent / "llama.cpp"))
+    ap.add_argument("--bin", default=llama_cpp_dir + "/build/bin/llama-mtmd-cli")
+    ap.add_argument("--llama-repo", default=llama_cpp_dir)
     ap.add_argument("--model", default=str(REPO_ROOT / "models/llava-v1.5-7b-Q4_K_M.gguf"))
     ap.add_argument("--mmproj", default=str(REPO_ROOT / "models/llava-v1.5-7b-mmproj-model-f16.gguf"))
     ap.add_argument("--image", default=str(REPO_ROOT / "assets/coco_val2017_000000039769.jpg"))

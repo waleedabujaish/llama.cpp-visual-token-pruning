@@ -22,6 +22,7 @@ JSON so a crash cannot lose completed samples.
 import argparse
 import datetime
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -60,7 +61,8 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="dir with NNN.png + meta.jsonl")
     ap.add_argument("--hf-results", required=True, help="textvqa_sim results JSON (paired baseline)")
-    ap.add_argument("--bin", default=str(Path.home() / "Desktop/vtp/llama.cpp/build/bin/llama-mtmd-cli"))
+    ap.add_argument("--bin", default=os.environ.get(
+        "LLAMA_CPP_DIR", str(REPO_ROOT.parent / "llama.cpp")) + "/build/bin/llama-mtmd-cli")
     ap.add_argument("--model", default=str(REPO_ROOT / "models/llava-v1.5-7b-Q4_K_M.gguf"))
     ap.add_argument("--mmproj", default=str(REPO_ROOT / "models/llava-v1.5-7b-mmproj-model-f16.gguf"))
     ap.add_argument("--tag", default="p1_textvqa_llamacpp")
