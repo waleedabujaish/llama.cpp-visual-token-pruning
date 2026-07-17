@@ -1,0 +1,351 @@
+{
+  "tag": "g2_baseline_unfixed_cooled",
+  "timestamp": "20260718-000051",
+  "provenance": {
+    "model_repo": "second-state/Llava-v1.5-7B-GGUF",
+    "model_files": [
+      "llava-v1.5-7b-Q4_K_M.gguf",
+      "llava-v1.5-7b-mmproj-model-f16.gguf"
+    ],
+    "substitution_reason": "Originally planned mys/ggml_llava-v1.5-7b fails to load at the pinned llama.cpp commit: its 2023-era mmproj lacks the clip.projector_type GGUF key required by the current loader (clip.cpp:1153). second-state repack is the same LLaVA-1.5-7B weights and is used by llama.cpp's own vision test suite (tools/mtmd/tests.sh:95).",
+    "config_frozen": "Run config frozen 2026-07-17 for all cells incl. pruned runs: -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v. Rationale in NOTES.md. -t 8 = P-cores only (deliberate; E-core/all-core ablation deferred). -ub 1024 keeps the 576-token non-causal image batch in one ubatch."
+  },
+  "command": [
+    "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build/bin/llama-mtmd-cli",
+    "-m",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "--mmproj",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "--image",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+    "-p",
+    "Describe the image in detail.",
+    "-n",
+    "32",
+    "--temp",
+    "0",
+    "--seed",
+    "42",
+    "-t",
+    "8",
+    "-tb",
+    "8",
+    "-b",
+    "2048",
+    "-ub",
+    "1024",
+    "--perf",
+    "--chat-template",
+    "vicuna",
+    "-v"
+  ],
+  "prompt": "Describe the image in detail.",
+  "config": {
+    "n_predict": 32,
+    "threads": 8,
+    "batch": 2048,
+    "ubatch": 1024,
+    "temp": 0.0,
+    "seed": 42,
+    "warmup_discarded": 1,
+    "timed_runs": 6,
+    "cooldown_s_between_runs": 30.0
+  },
+  "environment": {
+    "llama_cpp_build": {
+      "bin_path": "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 10055 (e8f19cc0a)",
+      "bin_commit_short": "e8f19cc0a",
+      "bin_commit": "e8f19cc0ad70a243c8012bf17b4be601abfc8ea2",
+      "repo_head_commit": "f104a5d38a57ba73c559fd51e4717ac00518f9c1",
+      "repo_head_branch": "mtmd-fix-llava-layer-count",
+      "repo_head_matches_binary": false,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
+    "cpu": "Apple M4 Pro",
+    "n_cores": "12",
+    "p_cores": "8",
+    "e_cores": "4",
+    "mem_bytes": "25769803776",
+    "os": "Darwin 24.2.0 (arm64)",
+    "load_avg_1_5_15_at_start": [
+      3.25341796875,
+      3.388671875,
+      3.35986328125
+    ],
+    "load_avg_1_5_15_at_end": [
+      3.82666015625,
+      3.48681640625,
+      3.3916015625
+    ]
+  },
+  "files": {
+    "model": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+      "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+    },
+    "mmproj": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+      "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+    },
+    "image": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+      "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
+    }
+  },
+  "runs": [
+    {
+      "encode_ms": 684.0,
+      "image_decode_ms": 4429.0,
+      "prompt_eval_ms": 5284.26,
+      "n_prompt_tokens": 593,
+      "eval_ms": 747.33,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.48100571367401,
+      "load_ms": 1589.37,
+      "total_ms": 6205.7,
+      "ttft_llm_ms": 5284.26,
+      "ttft_vlm_ms": 5968.26,
+      "encoder_fraction": 0.11460626715324064,
+      "wall_s_process": 7.972821666000527,
+      "label": "run1"
+    },
+    {
+      "encode_ms": 683.0,
+      "image_decode_ms": 4391.0,
+      "prompt_eval_ms": 5244.31,
+      "n_prompt_tokens": 593,
+      "eval_ms": 742.4,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.75646551724138,
+      "load_ms": 1582.08,
+      "total_ms": 6151.34,
+      "ttft_llm_ms": 5244.31,
+      "ttft_vlm_ms": 5927.31,
+      "encoder_fraction": 0.11522933674803577,
+      "wall_s_process": 7.910986708011478,
+      "label": "run2"
+    },
+    {
+      "encode_ms": 857.0,
+      "image_decode_ms": 5110.0,
+      "prompt_eval_ms": 6204.25,
+      "n_prompt_tokens": 593,
+      "eval_ms": 776.91,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 39.90166171113771,
+      "load_ms": 1751.21,
+      "total_ms": 7166.7,
+      "ttft_llm_ms": 6204.25,
+      "ttft_vlm_ms": 7061.25,
+      "encoder_fraction": 0.1213666135599221,
+      "wall_s_process": 9.101147166991723,
+      "label": "run3"
+    },
+    {
+      "encode_ms": 679.0,
+      "image_decode_ms": 4450.0,
+      "prompt_eval_ms": 5304.51,
+      "n_prompt_tokens": 593,
+      "eval_ms": 746.69,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.51655975036494,
+      "load_ms": 1614.72,
+      "total_ms": 6222.34,
+      "ttft_llm_ms": 5304.51,
+      "ttft_vlm_ms": 5983.51,
+      "encoder_fraction": 0.11347854353046957,
+      "wall_s_process": 8.024102291004965,
+      "label": "run4"
+    },
+    {
+      "encode_ms": 679.0,
+      "image_decode_ms": 4396.0,
+      "prompt_eval_ms": 5246.96,
+      "n_prompt_tokens": 593,
+      "eval_ms": 750.78,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.29039132635393,
+      "load_ms": 1599.92,
+      "total_ms": 6162.9,
+      "ttft_llm_ms": 5246.96,
+      "ttft_vlm_ms": 5925.96,
+      "encoder_fraction": 0.11458059116160083,
+      "wall_s_process": 7.948486458000843,
+      "label": "run5"
+    },
+    {
+      "encode_ms": 680.0,
+      "image_decode_ms": 4391.0,
+      "prompt_eval_ms": 5242.93,
+      "n_prompt_tokens": 593,
+      "eval_ms": 751.06,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.27499800282268,
+      "load_ms": 1586.36,
+      "total_ms": 6167.05,
+      "ttft_llm_ms": 5242.93,
+      "ttft_vlm_ms": 5922.93,
+      "encoder_fraction": 0.11480804264105772,
+      "wall_s_process": 7.936384083994199,
+      "label": "run6"
+    }
+  ],
+  "aggregate": {
+    "encode_ms": {
+      "mean": 710.3333333333334,
+      "std": 71.88231122234917,
+      "n": 6,
+      "values": [
+        684.0,
+        683.0,
+        857.0,
+        679.0,
+        679.0,
+        680.0
+      ]
+    },
+    "image_decode_ms": {
+      "mean": 4527.833333333333,
+      "std": 286.2065105245977,
+      "n": 6,
+      "values": [
+        4429.0,
+        4391.0,
+        5110.0,
+        4450.0,
+        4396.0,
+        4391.0
+      ]
+    },
+    "prompt_eval_ms": {
+      "mean": 5421.203333333334,
+      "std": 384.4388806386089,
+      "n": 6,
+      "values": [
+        5284.26,
+        5244.31,
+        6204.25,
+        5304.51,
+        5246.96,
+        5242.93
+      ]
+    },
+    "eval_ms": {
+      "mean": 752.5283333333333,
+      "std": 12.356134373932095,
+      "n": 6,
+      "values": [
+        747.33,
+        742.4,
+        776.91,
+        746.69,
+        750.78,
+        751.06
+      ]
+    },
+    "decode_tok_per_s": {
+      "mean": 41.20351367026578,
+      "std": 0.6615484393312577,
+      "n": 6,
+      "values": [
+        41.48100571367401,
+        41.75646551724138,
+        39.90166171113771,
+        41.51655975036494,
+        41.29039132635393,
+        41.27499800282268
+      ]
+    },
+    "load_ms": {
+      "mean": 1620.61,
+      "std": 65.04258481948581,
+      "n": 6,
+      "values": [
+        1589.37,
+        1582.08,
+        1751.21,
+        1614.72,
+        1599.92,
+        1586.36
+      ]
+    },
+    "ttft_llm_ms": {
+      "mean": 5421.203333333334,
+      "std": 384.4388806386089,
+      "n": 6,
+      "values": [
+        5284.26,
+        5244.31,
+        6204.25,
+        5304.51,
+        5246.96,
+        5242.93
+      ]
+    },
+    "ttft_vlm_ms": {
+      "mean": 6131.536666666667,
+      "std": 456.1633665110194,
+      "n": 6,
+      "values": [
+        5968.26,
+        5927.31,
+        7061.25,
+        5983.51,
+        5925.96,
+        5922.93
+      ]
+    },
+    "encoder_fraction": {
+      "mean": 0.1156782324657211,
+      "std": 0.002846365213555967,
+      "n": 6,
+      "values": [
+        0.11460626715324064,
+        0.11522933674803577,
+        0.1213666135599221,
+        0.11347854353046957,
+        0.11458059116160083,
+        0.11480804264105772
+      ]
+    },
+    "total_ms": {
+      "mean": 6346.005,
+      "std": 402.98029816605174,
+      "n": 6,
+      "values": [
+        6205.7,
+        6151.34,
+        7166.7,
+        6222.34,
+        6162.9,
+        6167.05
+      ]
+    },
+    "wall_s_process": {
+      "mean": 8.148988062333956,
+      "std": 0.4680350425482266,
+      "n": 6,
+      "values": [
+        7.972821666000527,
+        7.910986708011478,
+        9.101147166991723,
+        8.024102291004965,
+        7.948486458000843,
+        7.936384083994199
+      ]
+    }
+  },
+  "derived": {
+    "encoder_fraction_of_ttft_vlm": 0.11584915363794068,
+    "amdahl_ceiling_simple_1_over_frac": 8.631914594087283,
+    "amdahl_ceiling_refined_keep0": 3.8233609291826607,
+    "note": "simple = 1/encoder_fraction (plan \u00a71); refined = keep->0 limit where only the image-embedding part of prefill (image_decode_ms) is prunable"
+  },
+  "determinism": {
+    "identical_output_across_timed_runs": true,
+    "generated_text_first_run": "The image features a pink couch with two cats lying on it. One cat is located on the left side of the couch, while the other"
+  },
+  "raw_logs_dir": "results/raw/20260718-000051_g2_baseline_unfixed_cooled"
+}

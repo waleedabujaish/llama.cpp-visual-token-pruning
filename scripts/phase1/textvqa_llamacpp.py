@@ -24,6 +24,7 @@ import datetime
 import json
 import os
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -32,6 +33,8 @@ import numpy as np
 from textvqa_sim import vqa_accuracy
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(REPO_ROOT / "scripts"))
+from llama_provenance import resolve_build_provenance  # noqa: E402
 SYSTEM_PROMPT = ("A chat between a curious user and an artificial intelligence assistant. "
                  "The assistant gives helpful, detailed, and polite answers to the user's questions.")
 
@@ -61,14 +64,18 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="dir with NNN.png + meta.jsonl")
     ap.add_argument("--hf-results", required=True, help="textvqa_sim results JSON (paired baseline)")
-    ap.add_argument("--bin", default=os.environ.get(
-        "LLAMA_CPP_DIR", str(REPO_ROOT.parent / "llama.cpp")) + "/build/bin/llama-mtmd-cli")
+    llama_cpp_dir = os.environ.get("LLAMA_CPP_DIR", str(REPO_ROOT.parent / "llama.cpp"))
+    ap.add_argument("--bin", default=llama_cpp_dir + "/build/bin/llama-mtmd-cli")
+    ap.add_argument("--llama-repo", default=llama_cpp_dir,
+                    help="llama.cpp checkout used to resolve --bin's --version short hash to full")
     ap.add_argument("--model", default=str(REPO_ROOT / "models/llava-v1.5-7b-Q4_K_M.gguf"))
     ap.add_argument("--mmproj", default=str(REPO_ROOT / "models/llava-v1.5-7b-mmproj-model-f16.gguf"))
     ap.add_argument("--tag", default="p1_textvqa_llamacpp")
     ap.add_argument("--limit", type=int, default=0)
-    ap.add_argument("--build-note", default="master e8f19cc0 (unfixed)",
-                    help="branch/commit of the llama.cpp build under test, recorded in the JSON")
+    ap.add_argument("--build-note", default="",
+                    help="optional free-text human label for the build under test; the actual "
+                         "commit recorded in the JSON always comes from --bin's own --version "
+                         "output, not from this flag")
     args = ap.parse_args()
 
     data = Path(args.data)
@@ -115,7 +122,7 @@ def main():
 
     out = {
         "tag": args.tag, "timestamp": ts,
-        "llama_cpp": {"commit": "base e8f19cc0ad70a243c8012bf17b4be601abfc8ea2",
+        "llama_cpp": {"build_provenance": resolve_build_provenance(args.bin, args.llama_repo),
                       "build_note": args.build_note,
                       "build": "Release, GGML_METAL=OFF, CPU+Accelerate",
                       "model": args.model, "mmproj": args.mmproj,

@@ -36,6 +36,8 @@ import time
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from llama_provenance import resolve_build_provenance  # noqa: E402
 
 # Model provenance, recorded into every results JSON (see NOTES.md).
 PROVENANCE = {
@@ -78,11 +80,6 @@ def sysctl(key: str) -> str:
         return subprocess.run(["sysctl", "-n", key], capture_output=True, text=True).stdout.strip()
     except Exception:
         return ""
-
-
-def git_commit(repo: Path) -> str:
-    r = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True)
-    return r.stdout.strip()
 
 
 def parse_run(log: str) -> dict:
@@ -144,11 +141,16 @@ def main():
     ap.add_argument("--warmup", type=int, default=1)
     ap.add_argument("--runs", type=int, default=6)
     ap.add_argument("--tag", default="g0_baseline")
+    ap.add_argument("--cooldown-s", type=float, default=0.0,
+                    help="sleep this many seconds between runs (incl. after warmup); "
+                         "mitigates the sustained -t N thermal drift observed within "
+                         "back-to-back 6-run blocks (see NOTES.md)")
     args = ap.parse_args()
 
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     raw_dir = REPO_ROOT / "results" / "raw" / f"{ts}_{args.tag}"
     raw_dir.mkdir(parents=True, exist_ok=True)
+    load_avg_start = os.getloadavg()
 
     cmd = [
         args.bin,
@@ -199,6 +201,8 @@ def main():
         if i >= args.warmup:
             runs.append(parsed)
             texts.append(proc.stdout.strip())
+        if args.cooldown_s > 0 and i < total - 1:
+            time.sleep(args.cooldown_s)
 
     identical_output = len(set(texts)) == 1
 
@@ -221,9 +225,10 @@ def main():
             "batch": args.batch, "ubatch": args.ubatch,
             "temp": 0.0, "seed": args.seed,
             "warmup_discarded": args.warmup, "timed_runs": args.runs,
+            "cooldown_s_between_runs": args.cooldown_s,
         },
         "environment": {
-            "llama_cpp_commit": git_commit(Path(args.llama_repo)),
+            "llama_cpp_build": resolve_build_provenance(args.bin, args.llama_repo),
             "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
             "cpu": sysctl("machdep.cpu.brand_string"),
             "n_cores": sysctl("hw.ncpu"),
@@ -231,6 +236,8 @@ def main():
             "e_cores": sysctl("hw.perflevel1.physicalcpu"),
             "mem_bytes": sysctl("hw.memsize"),
             "os": f"{platform.system()} {platform.release()} ({platform.machine()})",
+            "load_avg_1_5_15_at_start": list(load_avg_start),
+            "load_avg_1_5_15_at_end": list(os.getloadavg()),
         },
         "files": {
             "model": {"path": args.model, "sha256": model_sha},

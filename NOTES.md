@@ -224,3 +224,158 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
 - Observed in G0: prompt-eval drifted +5.5% monotonically across 6
   back-to-back runs (thermal). If drift persists in longer sweeps, add a
   fixed inter-run cooldown to the protocol and note it here.
+- **Drift persisted and got worse (2026-07-17 Phase 2 session): resolved by
+  a 30s inter-run cooldown.** See "Phase 2 re-baseline" below. `bench_baseline.py`
+  now takes `--cooldown-s`; use it for every cell in the upcoming keep-ratio
+  sweep (many more back-to-back invocations than G0 had).
+
+## Phase 2 re-baseline (2026-07-17/18, fixed build)
+
+All future pruning comparisons use this section's numbers, not G0's. G0 is
+kept only as the historical "before the bugs were fixed" reference.
+
+### Provenance bug found and fixed
+
+`bench_baseline.py` and `scripts/phase1/textvqa_llamacpp.py` stamped result
+JSON with `git rev-parse HEAD` on the llama.cpp checkout (or, in
+`textvqa_llamacpp.py`, a hardcoded string) as "the commit under test." This
+silently goes wrong once the checkout moves to a different branch than the
+one a given `build*/bin/llama-mtmd-cli` was compiled from — which happened
+between the 2026-07-17 16:31 fix-verification session and this one (repo
+sat on `mtmd-fix-llava-layer-count` while `build-both/` was still the
+`local-test-both` binary). Confirmed empirically: `git rev-parse HEAD` at
+session start returned `f104a5d38...` (fixB branch) while `build-both/bin/
+llama-mtmd-cli --version` self-reports `5b9058635` (local-test-both) — the
+old code would have mis-stamped every result from this session.
+
+Fixed by `scripts/llama_provenance.py` (shared by both scripts):
+`resolve_build_provenance(bin, repo)` parses the *binary's own*
+`--version` output (authoritative — it's baked in at compile time, printed
+to stderr) and resolves the short hash to full via read-only
+`git rev-parse <hash>^{commit}`. The repo's checked-out HEAD is also
+recorded as a secondary field (`repo_head_commit`,
+`repo_head_matches_binary`) so a future mismatch is visible in the JSON
+instead of silently wrong. Verified against all four build dirs
+(`build`, `build-fixA`, `build-fixB`, `build-both`) — each binary
+self-reports exactly the commit its directory name implies.
+
+Not retroactively fixed: `results/20260717-163502_p2_textvqa_llamacpp_fixed.json`
+and siblings from the earlier session carry the old hardcoded
+`"commit": "base e8f19cc0..."` (wrong; `build_note` on the same object
+correctly says `local-test-both`). Left as-is rather than editing a
+published result file after the fact; noted here for anyone reading that
+file directly.
+
+### Thermal drift: worse than G0, root-caused, fixed
+
+First two re-baseline attempts (`results/20260717-234532_g2_baseline_fixed.json`,
+`results/20260717-235252_g2_baseline_fixed_clean.json`, both build-both,
+no cooldown) showed run1 near G0's numbers (~5300-5600ms prompt-eval) then
+climbing and staying elevated (~6700-7200ms) for runs 2-6, with `uptime`
+load average roughly tripling (2.2 -> 7.7) over each ~90s / 7-invocation
+block. A same-session unfixed control
+(`results/20260717-234854_g2_baseline_unfixed_control.json`) run
+immediately after showed the identical pattern, ruling out "it's something
+about the fixed build" — this is sustained `-t 8` thermal throttling on
+the M4 Pro, worse today than during either G0 or the 16:31 session (both
+of which had natural gaps between blocks from interactive command entry;
+today's back-to-back automated blocks gave the CPU no recovery time).
+
+Fix: added `--cooldown-s` to `bench_baseline.py` (sleep between every
+invocation, including after warmup). A 30s cooldown eliminated the drift
+almost entirely — see the `_cooled` results below, std dropped from
+~70-90ms to ~1-12ms on encode/prompt-eval. Adopt `--cooldown-s 30` (or
+longer) for the keep-ratio sweep, which will run far more back-to-back
+cells than this baseline did.
+
+The two uncooled attempts and the uncooled unfixed control remain in
+`results/` as honest raw data (nothing fabricated, real executed runs) but
+are superseded by the cooled runs below and are not the reported numbers.
+
+### Official numbers (cooled, n=6 each, 30s cooldown)
+
+Fixed build (`build-both`, `local-test-both` @ `5b9058635`):
+`results/20260717-235645_g2_baseline_fixed_cooled.json`
+- encoder: 709.67 +/- 1.03 ms
+- TTFT_llm (prompt eval): 5268.20 +/- 12.50 ms
+- TTFT_vlm: 5977.87 +/- 11.81 ms
+- encoder fraction of TTFT_vlm: 11.87%
+- Amdahl ceiling, simple (1/encoder_fraction): 8.42x
+- Amdahl ceiling, refined (keep->0, image-token share of prefill only): 3.76x
+- determinism: identical output across all 6 timed runs
+
+Unfixed build (`build`, pinned `e8f19cc0`, same-session control):
+`results/20260718-000051_g2_baseline_unfixed_cooled.json`
+- encoder: 710.33 +/- 71.88 ms (one outlier run, see below)
+- TTFT_llm: 5421.20 +/- 384.44 ms (same outlier)
+- One of 6 runs (run3) spiked to encode=857ms/prompt_eval=6204ms with no
+  precedent in the surrounding runs (immediate neighbors back at baseline) —
+  read as a single transient background blip, not a recurrence of the
+  block-level thermal drift above (that pattern is monotonic-ish and
+  sustained; this is one isolated sample). Kept in the reported mean/std
+  (no data removed); sensitivity check below excludes it explicitly and is
+  labeled as such.
+
+Side-by-side vs G0 (`results/20260717-011050_g0_baseline.json`, different
+session, cross-session comparison — see caveat):
+| metric | G0 (old, unfixed) | G2 fixed (cooled) |
+|---|---|---|
+| encoder | 692.83 +/- 11.48 ms | 709.67 +/- 1.03 ms |
+| TTFT_llm | 5432.82 +/- 117.37 ms | 5268.20 +/- 12.50 ms |
+| TTFT_vlm | 6125.66 +/- 119.49 ms | 5977.87 +/- 11.81 ms |
+| encoder fraction | 11.31% | 11.87% |
+| Amdahl simple | 8.84x | 8.42x |
+| Amdahl refined | 3.88x | 3.76x |
+
+Caveat on the cross-session comparison: G0 and G2 were measured on
+different occasions (different pre-run thermal/frequency-scaling state);
+TTFT_llm is not expected to depend on which build ran it (see paired
+comparison below) and its ~3% difference here (5432ms vs 5268ms) is
+cross-session variance, not a fix effect. Do not read "TTFT_vlm went down"
+as "the fixes made things faster" — it is (small real encoder increase)
+minus (larger unrelated cross-session prefill variance).
+
+### Same-session paired fix-cost estimate (the number that isolates the fix)
+
+Isolating what fix-B (running the previously-dropped 23rd vision layer)
+actually costs requires same-session pairing, not cross-session comparison
+(lesson from the thermal section above — also true for non-thermal
+session-to-session variance). Three independent same-session measurements,
+increasing rigor:
+
+1. 2026-07-17 16:31 session (`p2_bench_both` vs `p2_bench_master_warm`,
+   both warm, no cooldown needed — this session had natural gaps between
+   blocks): encoder +5.26%, TTFT_llm +1.98%.
+2. 2026-07-18 00:00 session, cooled, raw (includes the run3 outlier above):
+   encoder -0.09%, TTFT_llm -2.82% — swamped by the single outlier in the
+   6-sample unfixed block; not a usable estimate at n=6 with one bad draw.
+3. Same session, outlier excluded as a sensitivity check (n=5 unfixed vs
+   n=6 fixed): encoder +4.21%, TTFT_llm +0.07%.
+
+Triangulated: fix-B costs roughly +4-5% encoder time (one extra ViT layer
+of compute), and, as physically expected, does not measurably change
+TTFT_llm (the LLM prefill consumes whatever embeddings the encoder
+produced; how many vision layers computed them is invisible to it). The
+correctness fixes are a real but small encoder-side cost, not a prefill
+cost.
+
+### TextVQA n=200, fixed build
+
+Not re-run: `results/20260717-163502_p2_textvqa_llamacpp_fixed.json`
+already is this measurement (same 200-sample pinned manifest, `build-both`
+@ `local-test-both`, n_scored=200, n_failed=0) from the 2026-07-17 16:35
+fix-verification session. Re-running would reproduce it exactly (temp=0,
+seed=42, same binary/model/data all deterministic; G0 and this session's
+`_cooled` runs both independently confirmed bit-identical output across
+repeated runs) so it was not repeated. Numbers, already in NOTES.md's fix
+verification section above and reconfirmed here:
+- llama.cpp fixed: 54.95% (n=200)
+- llama.cpp unfixed (stale — the number Task 1 was asked to replace): 56.35%
+- paired diff (fixed - unfixed, same 200 samples): -1.40pp, bootstrap 95%
+  CI [-4.65, +1.70], 8 wins / 9 losses / 183 ties for llama.cpp fixed
+  — statistically null in both directions
+  (`results/20260717-171500_p2_textvqa_paired_fixed_vs_unfixed.json`).
+- The correctness fixes measurably change representation-level output
+  (0.9965 mean cosine vs HF reference, see fix-verification section above)
+  but this particular end-task benchmark is too OCR-line-dominated to
+  register it; unchanged conclusion from the fix-verification session.
