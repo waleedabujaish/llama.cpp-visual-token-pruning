@@ -137,10 +137,14 @@ def main():
     ap.add_argument("--vocab-only", action="store_true",
                     help="metadata-only text model load (llama_model_n_embd_inp returns 0 there, "
                          "so the full mmap load is the default)")
+    ap.add_argument("--any-size", action="store_true",
+                    help="allow non-336x336 input (multi-tile models like llava-1.6; "
+                         "llama.cpp then does its own resize/tiling, so pixel parity with an "
+                         "external reference is no longer bit-exact)")
     args = ap.parse_args()
 
     img = Image.open(args.image).convert("RGB")
-    if img.size != (336, 336):
+    if img.size != (336, 336) and not args.any_size:
         raise SystemExit(f"image must be 336x336 (got {img.size}); pre-resize it once and save as PNG")
     rgb = np.asarray(img, dtype=np.uint8)  # (H, W, 3), row-major RGB — matches mtmd_bitmap layout
 
@@ -180,7 +184,7 @@ def main():
     ctx = mtmd.mtmd_init_from_file(args.mmproj.encode(), model, mp)
     assert ctx, "mtmd_init_from_file failed"
 
-    bmp = mtmd.mtmd_bitmap_init(336, 336, rgb.tobytes())
+    bmp = mtmd.mtmd_bitmap_init(img.size[0], img.size[1], rgb.tobytes())
     assert bmp, "bitmap init failed"
 
     chunks = mtmd.mtmd_input_chunks_init()
@@ -190,22 +194,25 @@ def main():
     assert ret == 0, f"mtmd_tokenize failed: {ret}"
 
     n_chunks = mtmd.mtmd_input_chunks_size(chunks)
-    img_chunk = None
+    img_chunks = []
     for i in range(n_chunks):
         ch = mtmd.mtmd_input_chunks_get(chunks, i)
-        if mtmd.mtmd_input_chunk_get_type(ch) == MTMD_INPUT_CHUNK_TYPE_IMAGE:
-            img_chunk = ch
-            break
-    assert img_chunk is not None, "no image chunk produced"
-    n_tokens = mtmd.mtmd_input_chunk_get_n_tokens(img_chunk)
-    print(f"[dump] image chunk: n_tokens={n_tokens}")
+        t = mtmd.mtmd_input_chunk_get_type(ch)
+        n = mtmd.mtmd_input_chunk_get_n_tokens(ch)
+        print(f"[dump] chunk {i}: type={t} n_tokens={n}")
+        if t == MTMD_INPUT_CHUNK_TYPE_IMAGE:
+            img_chunks.append((ch, n))
+    assert img_chunks, "no image chunk produced"
 
-    ret = mtmd.mtmd_encode_chunk(ctx, img_chunk)
-    assert ret == 0, f"mtmd_encode_chunk failed: {ret}"
-
-    ptr = mtmd.mtmd_get_output_embd(ctx)
-    assert ptr, "null output embd"
-    emb = np.ctypeslib.as_array(ptr, shape=(n_tokens, n_embd)).copy()
+    parts = []
+    for ch, n_tokens in img_chunks:
+        ret = mtmd.mtmd_encode_chunk(ctx, ch)
+        assert ret == 0, f"mtmd_encode_chunk failed: {ret}"
+        ptr = mtmd.mtmd_get_output_embd(ctx)
+        assert ptr, "null output embd"
+        parts.append(np.ctypeslib.as_array(ptr, shape=(n_tokens, n_embd)).copy())
+    emb = np.concatenate(parts, axis=0)
+    print(f"[dump] {len(parts)} image chunk(s), total tokens={emb.shape[0]}")
 
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

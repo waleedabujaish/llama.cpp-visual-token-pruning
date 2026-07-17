@@ -126,6 +126,29 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   `attentions[-2][:, :, 0, 1:].mean(heads)`, features = `hidden_states[-2][:, 1:]`,
   top-K via boolean mask (original spatial order preserved).
 
+## Pre-posting verification pass (2026-07-17)
+
+- Upstream drift: `upstream/master` fetched 2026-07-17 ==
+  `e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`, identical to our pin; 0 commits
+  since. Every citation in the bug one-pagers re-verified verbatim and
+  permalinked in `analysis/code-drift-check.md`. Claim provenance classified
+  in `analysis/claims-ledger.md`; fix plan in
+  `analysis/fix-verification-protocol.md`.
+- LLaVA-1.6 artifacts (empirical scope check): HF
+  `cjpais/llava-1.6-mistral-7b-gguf` (the repo llama.cpp's own tests.sh:96
+  uses) — `llava-v1.6-mistral-7b-Q4_K_M.gguf` sha256
+  `4bd1bc95c4db74f8140ee520e76d1f83e063d3fde9c3723eaa4a4776785a7aa6`,
+  `llava-v1.6-mistral-7b-mmproj-f16.gguf` sha256
+  `00205ee8a0d7a381900cd031e43105f86aa0d8c07bf329851e85c71a26632d16`.
+  Test input: `assets/phase1/uniform672.png` (uniform RGB 128, 672×672 —
+  chosen so all 5 llava-uhd tiles are pixel-identical) sha256
+  `d5f10997d701506834bfca6df9af773c5e26b12cbbb7e7809640ea90fc1b9b87`.
+  Reference weights read directly from the mmproj GGUF (F16→F32) by
+  `scripts/phase1/llava16_check.py` — no HF llava-1.6 checkpoint involved.
+  mtmd emits one image chunk per tile for llava-uhd (5×576 tokens);
+  `dump_llamacpp_embd.py` now concatenates all image chunks.
+  Result: `results/20260717-082218_p1_llava16_check.json`.
+
 ## Phase 1 verification addendum (stock-transformers check + end-task run)
 
 - Reference validation: the hand-rolled fp32 reference (`hf_reference.py`
