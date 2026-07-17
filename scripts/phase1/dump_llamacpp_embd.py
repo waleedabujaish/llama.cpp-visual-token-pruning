@@ -91,10 +91,11 @@ class mtmd_input_text(C.Structure):
     ]
 
 
-def load_libs():
-    ggml = C.CDLL(str(BIN_DIR / "libggml.dylib"), mode=C.RTLD_GLOBAL)
-    llama = C.CDLL(str(BIN_DIR / "libllama.dylib"), mode=C.RTLD_GLOBAL)
-    mtmd = C.CDLL(str(BIN_DIR / "libmtmd.dylib"), mode=C.RTLD_GLOBAL)
+def load_libs(lib_dir=None):
+    d = Path(lib_dir) if lib_dir else BIN_DIR
+    ggml = C.CDLL(str(d / "libggml.dylib"), mode=C.RTLD_GLOBAL)
+    llama = C.CDLL(str(d / "libllama.dylib"), mode=C.RTLD_GLOBAL)
+    mtmd = C.CDLL(str(d / "libmtmd.dylib"), mode=C.RTLD_GLOBAL)
 
     ggml.ggml_backend_load_all.restype = None
 
@@ -140,6 +141,9 @@ def main():
     ap.add_argument("--vocab-only", action="store_true",
                     help="metadata-only text model load (llama_model_n_embd_inp returns 0 there, "
                          "so the full mmap load is the default)")
+    ap.add_argument("--lib-dir", default=None,
+                    help="directory with the llama.cpp dylibs (default: $LLAMA_CPP_DIR/build/bin); "
+                         "use to test alternative builds, e.g. a fix branch's build dir")
     ap.add_argument("--any-size", action="store_true",
                     help="allow non-336x336 input (multi-tile models like llava-1.6; "
                          "llama.cpp then does its own resize/tiling, so pixel parity with an "
@@ -151,7 +155,7 @@ def main():
         raise SystemExit(f"image must be 336x336 (got {img.size}); pre-resize it once and save as PNG")
     rgb = np.asarray(img, dtype=np.uint8)  # (H, W, 3), row-major RGB — matches mtmd_bitmap layout
 
-    ggml, llama, mtmd = load_libs()
+    ggml, llama, mtmd = load_libs(args.lib_dir)
     ggml.ggml_backend_load_all()
     llama.llama_backend_init()
 

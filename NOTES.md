@@ -149,6 +149,43 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   `dump_llamacpp_embd.py` now concatenates all image chunks.
   Result: `results/20260717-082218_p1_llava16_check.json`.
 
+## Fix verification session (2026-07-17, results tagged p2_*)
+
+- Builds under test (fork ~/Desktop/vtp/llama.cpp, all branched from
+  e8f19cc0, same cmake flags as the pin): fix-A `mtmd-fix-llava-cls-order`
+  @ ab81d8fc1 (one-line concat swap), fix-B `mtmd-fix-llava-layer-count`
+  @ f104a5d38 (il_last = n_layer, +1 branch deleted), combined
+  `local-test-both` @ 5b9058635 (local-only octopus merge, never pushed).
+  Separate build dirs (build-fixA/fixB/both); pinned build/ kept as the
+  unfixed baseline binary.
+- Variant flips exactly as predicted (results/*_p2_fixverify_*.json):
+  fix-A → layerbug 0.9956; fix-B → clsbug 0.9986; combined → correct
+  0.9965; all margins ~0.049. Combined 1.6 per-tile: correct 0.99997 on
+  5/5 tiles, CLS-row cosine vs projected CLS drops 0.999998 → 0.1894.
+- Timing: raw deltas vs the cold G0 baseline are thermally inflated (all
+  configs' prefill drifted +6-10%); against a same-session warm master
+  control (p2_bench_master_warm): fix-A encoder −1.8% (noise), fix-B +5.9%,
+  combined +5.3% (predicted ~+4.5%), decode flat ±3%.
+- End-task (paired fixed-vs-unfixed, same 200 samples, same Q4_K_M + F16
+  files, p2_textvqa_*): fixed 54.95 vs unfixed 56.35, diff −1.40pp,
+  bootstrap 95% CI [−4.65, +1.70], 8/9/183 wins/losses/ties — statistically
+  zero; the OCR-assisted benchmark barely reacts to feature quality in
+  either direction (matches the earlier unfixed-vs-HF null). PR case rests
+  on representation-level correctness; a no-OCR or grounding-task rerun is
+  the designated follow-up if an end-task number is wanted.
+- Fix-B non-regression, proven empirically (p2_fixB_nonregression_glm_edge):
+  GLM-Edge-V-2B (THUDM/glm-edge-v-2b-gguf Q4_K_M + F16 mmproj, SigLIP,
+  full block_count + former il_last+=1 path) encoder output is
+  BIT-IDENTICAL (np.array_equal over 578×2048) between unfixed master and
+  build-fixB — the (N−1)+1 = N arithmetic holds in practice.
+- Smoke tests (p2_smoke_tests_combined_build): the tests.sh vision
+  invocations for second-state/Llava-v1.5-7B-GGUF:Q2_K and
+  cjpais/llava-1.6-mistral-7b-gguf:Q3_K_M replicated verbatim against
+  build-both — both PASS ("new york" criterion; raw logs in
+  results/raw/20260717_p2_smoke/). tests.sh itself was not executed because
+  it rebuilds build/ from the current checkout, which would have replaced
+  the pinned unfixed baseline binary.
+
 ## Phase 1 verification addendum (stock-transformers check + end-task run)
 
 - Reference validation: the hand-rolled fp32 reference (`hf_reference.py`

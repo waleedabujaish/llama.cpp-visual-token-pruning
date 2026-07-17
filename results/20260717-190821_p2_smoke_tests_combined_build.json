@@ -1,0 +1,20 @@
+{
+  "tag": "p2_smoke_tests_combined_build",
+  "timestamp": "20260717-190821",
+  "build": "local-test-both 5b9058635 (build-both/), = fix-A ab81d8fc1 + fix-B f104a5d38 on e8f19cc0",
+  "invocation": "llama-mtmd-cli -hf <model> --image tools/mtmd/test-1.jpeg --temp 0 -n 128 --flash-attn on --chat-template vicuna -p \"what is the publisher name of the newspaper?\" (exact tests.sh vision-test semantics; script itself not run because it rebuilds build/ from the current checkout)",
+  "runs": [
+    {
+      "model": "second-state/Llava-v1.5-7B-GGUF:Q2_K",
+      "pass": true,
+      "criterion": "output contains \"new york\" (tests.sh:206-209 semantics)",
+      "generated_text": "You are a helpful assistant USER: Hello ASSISTANT: Hi there</s> USER: How are you? ASSISTANT: The New York Times"
+    },
+    {
+      "model": "cjpais/llava-1.6-mistral-7b-gguf:Q3_K_M",
+      "pass": true,
+      "criterion": "output contains \"new york\" (tests.sh:206-209 semantics)",
+      "generated_text": "You are a helpful assistant USER: Hello ASSISTANT: Hi there</s> USER: How are you? ASSISTANT: The publisher name of the newspaper is \"The New York Times\"."
+    }
+  ]
+}

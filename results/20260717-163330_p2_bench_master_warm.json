@@ -1,0 +1,331 @@
+{
+  "tag": "p2_bench_master_warm",
+  "timestamp": "20260717-163330",
+  "provenance": {
+    "model_repo": "second-state/Llava-v1.5-7B-GGUF",
+    "model_files": [
+      "llava-v1.5-7b-Q4_K_M.gguf",
+      "llava-v1.5-7b-mmproj-model-f16.gguf"
+    ],
+    "substitution_reason": "Originally planned mys/ggml_llava-v1.5-7b fails to load at the pinned llama.cpp commit: its 2023-era mmproj lacks the clip.projector_type GGUF key required by the current loader (clip.cpp:1153). second-state repack is the same LLaVA-1.5-7B weights and is used by llama.cpp's own vision test suite (tools/mtmd/tests.sh:95).",
+    "config_frozen": "Run config frozen 2026-07-17 for all cells incl. pruned runs: -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v. Rationale in NOTES.md. -t 8 = P-cores only (deliberate; E-core/all-core ablation deferred). -ub 1024 keeps the 576-token non-causal image batch in one ubatch."
+  },
+  "command": [
+    "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build/bin/llama-mtmd-cli",
+    "-m",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "--mmproj",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "--image",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+    "-p",
+    "Describe the image in detail.",
+    "-n",
+    "32",
+    "--temp",
+    "0",
+    "--seed",
+    "42",
+    "-t",
+    "8",
+    "-tb",
+    "8",
+    "-b",
+    "2048",
+    "-ub",
+    "1024",
+    "--perf",
+    "--chat-template",
+    "vicuna",
+    "-v"
+  ],
+  "prompt": "Describe the image in detail.",
+  "config": {
+    "n_predict": 32,
+    "threads": 8,
+    "batch": 2048,
+    "ubatch": 1024,
+    "temp": 0.0,
+    "seed": 42,
+    "warmup_discarded": 1,
+    "timed_runs": 6
+  },
+  "environment": {
+    "llama_cpp_commit": "e8f19cc0ad70a243c8012bf17b4be601abfc8ea2",
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
+    "cpu": "Apple M4 Pro",
+    "n_cores": "12",
+    "p_cores": "8",
+    "e_cores": "4",
+    "mem_bytes": "25769803776",
+    "os": "Darwin 24.2.0 (arm64)"
+  },
+  "files": {
+    "model": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+      "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+    },
+    "mmproj": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+      "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+    },
+    "image": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+      "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
+    }
+  },
+  "runs": [
+    {
+      "encode_ms": 689.0,
+      "image_decode_ms": 4586.0,
+      "prompt_eval_ms": 5452.85,
+      "n_prompt_tokens": 593,
+      "eval_ms": 743.5,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.69468728984533,
+      "load_ms": 2562.15,
+      "total_ms": 6452.71,
+      "ttft_llm_ms": 5452.85,
+      "ttft_vlm_ms": 6141.85,
+      "encoder_fraction": 0.11218118319398877,
+      "wall_s_process": 9.17128462499386,
+      "label": "run1"
+    },
+    {
+      "encode_ms": 700.0,
+      "image_decode_ms": 4740.0,
+      "prompt_eval_ms": 5619.91,
+      "n_prompt_tokens": 593,
+      "eval_ms": 754.04,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 41.11187735398653,
+      "load_ms": 2373.25,
+      "total_ms": 6615.84,
+      "ttft_llm_ms": 5619.91,
+      "ttft_vlm_ms": 6319.91,
+      "encoder_fraction": 0.11076107096461817,
+      "wall_s_process": 9.145378916997288,
+      "label": "run2"
+    },
+    {
+      "encode_ms": 709.0,
+      "image_decode_ms": 4870.0,
+      "prompt_eval_ms": 5763.83,
+      "n_prompt_tokens": 593,
+      "eval_ms": 800.56,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 38.72289397421805,
+      "load_ms": 2184.12,
+      "total_ms": 6794.92,
+      "ttft_llm_ms": 5763.83,
+      "ttft_vlm_ms": 6472.83,
+      "encoder_fraction": 0.10953477845084762,
+      "wall_s_process": 9.133819125003356,
+      "label": "run3"
+    },
+    {
+      "encode_ms": 720.0,
+      "image_decode_ms": 5073.0,
+      "prompt_eval_ms": 5998.19,
+      "n_prompt_tokens": 593,
+      "eval_ms": 774.69,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 40.01600640256102,
+      "load_ms": 2224.95,
+      "total_ms": 7013.73,
+      "ttft_llm_ms": 5998.19,
+      "ttft_vlm_ms": 6718.19,
+      "encoder_fraction": 0.10717172333619622,
+      "wall_s_process": 9.383435540999926,
+      "label": "run4"
+    },
+    {
+      "encode_ms": 764.0,
+      "image_decode_ms": 5034.0,
+      "prompt_eval_ms": 6311.58,
+      "n_prompt_tokens": 593,
+      "eval_ms": 831.84,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 37.26678207347567,
+      "load_ms": 2514.09,
+      "total_ms": 7542.86,
+      "ttft_llm_ms": 6311.58,
+      "ttft_vlm_ms": 7075.58,
+      "encoder_fraction": 0.10797701389850727,
+      "wall_s_process": 10.20077245900029,
+      "label": "run5"
+    },
+    {
+      "encode_ms": 792.0,
+      "image_decode_ms": 5104.0,
+      "prompt_eval_ms": 6098.12,
+      "n_prompt_tokens": 593,
+      "eval_ms": 781.91,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 39.646506631197965,
+      "load_ms": 2474.18,
+      "total_ms": 7250.86,
+      "ttft_llm_ms": 6098.12,
+      "ttft_vlm_ms": 6890.12,
+      "encoder_fraction": 0.11494719975849478,
+      "wall_s_process": 9.86837087499589,
+      "label": "run6"
+    }
+  ],
+  "aggregate": {
+    "encode_ms": {
+      "mean": 729.0,
+      "std": 40.288956303185614,
+      "n": 6,
+      "values": [
+        689.0,
+        700.0,
+        709.0,
+        720.0,
+        764.0,
+        792.0
+      ]
+    },
+    "image_decode_ms": {
+      "mean": 4901.166666666667,
+      "std": 207.1660364699452,
+      "n": 6,
+      "values": [
+        4586.0,
+        4740.0,
+        4870.0,
+        5073.0,
+        5034.0,
+        5104.0
+      ]
+    },
+    "prompt_eval_ms": {
+      "mean": 5874.08,
+      "std": 319.74853494582254,
+      "n": 6,
+      "values": [
+        5452.85,
+        5619.91,
+        5763.83,
+        5998.19,
+        6311.58,
+        6098.12
+      ]
+    },
+    "eval_ms": {
+      "mean": 781.09,
+      "std": 32.0655154332501,
+      "n": 6,
+      "values": [
+        743.5,
+        754.04,
+        800.56,
+        774.69,
+        831.84,
+        781.91
+      ]
+    },
+    "decode_tok_per_s": {
+      "mean": 39.74312562088076,
+      "std": 1.6086654955245667,
+      "n": 6,
+      "values": [
+        41.69468728984533,
+        41.11187735398653,
+        38.72289397421805,
+        40.01600640256102,
+        37.26678207347567,
+        39.646506631197965
+      ]
+    },
+    "load_ms": {
+      "mean": 2388.79,
+      "std": 156.21784648368453,
+      "n": 6,
+      "values": [
+        2562.15,
+        2373.25,
+        2184.12,
+        2224.95,
+        2514.09,
+        2474.18
+      ]
+    },
+    "ttft_llm_ms": {
+      "mean": 5874.08,
+      "std": 319.74853494582254,
+      "n": 6,
+      "values": [
+        5452.85,
+        5619.91,
+        5763.83,
+        5998.19,
+        6311.58,
+        6098.12
+      ]
+    },
+    "ttft_vlm_ms": {
+      "mean": 6603.08,
+      "std": 354.621473687085,
+      "n": 6,
+      "values": [
+        6141.85,
+        6319.91,
+        6472.83,
+        6718.19,
+        7075.58,
+        6890.12
+      ]
+    },
+    "encoder_fraction": {
+      "mean": 0.1104288282671088,
+      "std": 0.0028641321630466362,
+      "n": 6,
+      "values": [
+        0.11218118319398877,
+        0.11076107096461817,
+        0.10953477845084762,
+        0.10717172333619622,
+        0.10797701389850727,
+        0.11494719975849478
+      ]
+    },
+    "total_ms": {
+      "mean": 6945.153333333334,
+      "std": 407.16835513908313,
+      "n": 6,
+      "values": [
+        6452.71,
+        6615.84,
+        6794.92,
+        7013.73,
+        7542.86,
+        7250.86
+      ]
+    },
+    "wall_s_process": {
+      "mean": 9.483843590331768,
+      "std": 0.4487089435233216,
+      "n": 6,
+      "values": [
+        9.17128462499386,
+        9.145378916997288,
+        9.133819125003356,
+        9.383435540999926,
+        10.20077245900029,
+        9.86837087499589
+      ]
+    }
+  },
+  "derived": {
+    "encoder_fraction_of_ttft_vlm": 0.11040302404332523,
+    "amdahl_ceiling_simple_1_over_frac": 9.057722908093279,
+    "amdahl_ceiling_refined_keep0": 3.879798031235434,
+    "note": "simple = 1/encoder_fraction (plan \u00a71); refined = keep->0 limit where only the image-embedding part of prefill (image_decode_ms) is prunable"
+  },
+  "determinism": {
+    "identical_output_across_timed_runs": true,
+    "generated_text_first_run": "The image features a pink couch with two cats lying on it. One cat is located on the left side of the couch, while the other"
+  },
+  "raw_logs_dir": "results/raw/20260717-163330_p2_bench_master_warm"
+}

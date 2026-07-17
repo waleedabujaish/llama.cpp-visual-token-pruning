@@ -67,6 +67,8 @@ def main():
     ap.add_argument("--mmproj", default=str(REPO_ROOT / "models/llava-v1.5-7b-mmproj-model-f16.gguf"))
     ap.add_argument("--tag", default="p1_textvqa_llamacpp")
     ap.add_argument("--limit", type=int, default=0)
+    ap.add_argument("--build-note", default="master e8f19cc0 (unfixed)",
+                    help="branch/commit of the llama.cpp build under test, recorded in the JSON")
     args = ap.parse_args()
 
     data = Path(args.data)
@@ -113,7 +115,8 @@ def main():
 
     out = {
         "tag": args.tag, "timestamp": ts,
-        "llama_cpp": {"commit": "e8f19cc0ad70a243c8012bf17b4be601abfc8ea2",
+        "llama_cpp": {"commit": "base e8f19cc0ad70a243c8012bf17b4be601abfc8ea2",
+                      "build_note": args.build_note,
                       "build": "Release, GGML_METAL=OFF, CPU+Accelerate",
                       "model": args.model, "mmproj": args.mmproj,
                       "config": "-n 16 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024, "
