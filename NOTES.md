@@ -126,6 +126,34 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   `attentions[-2][:, :, 0, 1:].mean(heads)`, features = `hidden_states[-2][:, 1:]`,
   top-K via boolean mask (original spatial order preserved).
 
+## Phase 1 verification addendum (stock-transformers check + end-task run)
+
+- Reference validation: the hand-rolled fp32 reference (`hf_reference.py`
+  "correct" variant) matches stock
+  `LlavaForConditionalGeneration.get_image_features()` (config defaults
+  `vision_feature_layer=-2`, `strategy=default`, fp32 vision path, identical
+  pixel construction) at mean per-token cosine 0.9999999999 (min 0.99999996).
+  Stock transformers vs llama.cpp output: 0.5010 mean cosine. The
+  representation-level bug claim therefore rests on stock transformers code.
+  Result: `results/20260717-062557_p1_stock_validation.json`.
+- End-task run: the same 200-sample TextVQA slice through `llama-mtmd-cli`
+  (pinned build/commit, frozen inference flags). Prompt parity with the HF
+  baseline via a custom jinja chat template
+  (`scripts/phase1/vicuna_v1_llava.jinja`, passed inline via
+  `--jinja --chat-template`; this replaces `--chat-template vicuna` for
+  accuracy runs only — builtin vicuna inserts different whitespace than the
+  LLaVA vicuna_v1 format; inference flags unchanged). Scoring code identical
+  (imports `textvqa_sim.vqa_accuracy`). Result: llama.cpp 56.35 vs HF-fp16
+  58.50, paired diff -2.15pp, bootstrap 95% CI [-7.0, +2.75] — direction
+  consistent with the bugs but NOT statistically resolvable at n=200, and
+  confounded with Q4_K_M quantization. 165/200 exact ties; 196/200 prompts
+  carry the OCR reference line, which makes this benchmark configuration
+  weakly vision-sensitive. Result:
+  `results/20260717-063925_p1_textvqa_llamacpp.json` (+ `.preds.jsonl`).
+- Eval-set pin: `assets/phase1/textvqa200_manifest.jsonl` records the exact
+  200 questions/answers/OCR tokens (first 200 of lmms-lab/textvqa validation
+  in streaming order); images re-derivable from the dataset by index.
+
 ## Run protocol
 
 - Per cell: 1 warm-up run (discarded) + ≥5 timed runs (G0 used 6);
