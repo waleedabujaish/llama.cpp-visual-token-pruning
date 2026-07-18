@@ -65,6 +65,12 @@ RE_LOAD = re.compile(r"load time\s*=\s*([\d.]+) ms")
 RE_PROMPT_EVAL = re.compile(r"prompt eval time\s*=\s*([\d.]+) ms\s*/\s*(\d+) tokens")
 RE_EVAL = re.compile(r"[^t] eval time\s*=\s*([\d.]+) ms\s*/\s*(\d+) runs")
 RE_TOTAL = re.compile(r"total time\s*=\s*([\d.]+) ms\s*/\s*(\d+) tokens")
+# llama_kv_cache logs one "CPU KV buffer size" line per context init (usually 2: a
+# throwaway warmup context + the real one) -- take the last, it's the real context's.
+RE_KV_BUFFER = re.compile(r"llama_kv_cache:\s+CPU KV buffer size\s*=\s*([\d.]+) MiB")
+# /usr/bin/time -l (macOS) output, appended to stderr after the wrapped process exits.
+RE_MAXRSS = re.compile(r"(\d+)\s+maximum resident set size")
+RE_FOOTPRINT = re.compile(r"(\d+)\s+peak memory footprint")
 
 
 def sha256(path: Path) -> str:
@@ -112,6 +118,16 @@ def parse_run(log: str) -> dict:
         "ttft_llm_ms": ttft_llm,
         "ttft_vlm_ms": ttft_vlm,
         "encoder_fraction": encode_ms / ttft_vlm,
+        "kv_buffer_mib": float(RE_KV_BUFFER.findall(log)[-1]) if RE_KV_BUFFER.search(log) else None,
+    }
+
+
+def parse_mem(time_l_output: str) -> dict:
+    m_rss = RE_MAXRSS.search(time_l_output)
+    m_fp = RE_FOOTPRINT.search(time_l_output)
+    return {
+        "max_rss_mib": float(m_rss.group(1)) / (1024 * 1024) if m_rss else None,
+        "peak_footprint_mib": float(m_fp.group(1)) / (1024 * 1024) if m_fp else None,
     }
 
 
@@ -148,6 +164,9 @@ def main():
     ap.add_argument("--extra-arg", action="append", default=[],
                     help="additional llama-mtmd-cli flag, repeatable, e.g. "
                          "--extra-arg=--visual-keep --extra-arg=0.5")
+    ap.add_argument("--no-mem", action="store_true",
+                    help="skip wrapping with /usr/bin/time -l (peak RSS/footprint tracking); "
+                         "macOS-only wrapper, disable if running elsewhere")
     args = ap.parse_args()
 
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -172,6 +191,8 @@ def main():
         "--chat-template", "vicuna",
         "-v",  # timing lines (image decode, llama_perf) only print at full verbosity
     ] + args.extra_arg
+    if not args.no_mem:
+        cmd = ["/usr/bin/time", "-l"] + cmd
 
     print(f"[bench] command: {' '.join(cmd)}", flush=True)
     print(f"[bench] hashing model files ...", flush=True)
@@ -197,10 +218,15 @@ def main():
         parsed = parse_run(log)
         parsed["wall_s_process"] = wall_s
         parsed["label"] = label
+        if not args.no_mem:
+            mem = parse_mem(proc.stderr)
+            parsed["max_rss_mib"] = mem["max_rss_mib"]
+            parsed["peak_footprint_mib"] = mem["peak_footprint_mib"]
+        mem_str = (f" rss={parsed['max_rss_mib']:.0f}MiB" if not args.no_mem and parsed.get("max_rss_mib") else "")
         print(f"[bench] {label}: encode={parsed['encode_ms']:.0f}ms "
               f"prompt_eval={parsed['prompt_eval_ms']:.0f}ms ({parsed['n_prompt_tokens']} tok) "
               f"img_decode={parsed['image_decode_ms']:.0f}ms "
-              f"decode={parsed['decode_tok_per_s']:.2f} tok/s wall={wall_s:.1f}s", flush=True)
+              f"decode={parsed['decode_tok_per_s']:.2f} tok/s wall={wall_s:.1f}s{mem_str}", flush=True)
         if i >= args.warmup:
             runs.append(parsed)
             texts.append(proc.stdout.strip())
@@ -209,10 +235,14 @@ def main():
 
     identical_output = len(set(texts)) == 1
 
-    agg = {k: mean_std([r[k] for r in runs]) for k in
-           ["encode_ms", "image_decode_ms", "prompt_eval_ms", "eval_ms",
-            "decode_tok_per_s", "load_ms", "ttft_llm_ms", "ttft_vlm_ms",
-            "encoder_fraction", "total_ms", "wall_s_process"]}
+    agg_keys = ["encode_ms", "image_decode_ms", "prompt_eval_ms", "eval_ms",
+                "decode_tok_per_s", "load_ms", "ttft_llm_ms", "ttft_vlm_ms",
+                "encoder_fraction", "total_ms", "wall_s_process"]
+    if not args.no_mem:
+        agg_keys += ["max_rss_mib", "peak_footprint_mib"]
+    agg = {k: mean_std([r[k] for r in runs if r.get(k) is not None]) for k in agg_keys
+           if any(r.get(k) is not None for r in runs)}
+    kv_buffer_values = [r["kv_buffer_mib"] for r in runs if r.get("kv_buffer_mib") is not None]
 
     enc = agg["encode_ms"]["mean"]
     pe = agg["prompt_eval_ms"]["mean"]
@@ -250,6 +280,7 @@ def main():
         },
         "runs": runs,
         "aggregate": agg,
+        "kv_buffer_mib": kv_buffer_values[-1] if kv_buffer_values else None,
         "derived": {
             "encoder_fraction_of_ttft_vlm": enc / (enc + pe),
             "amdahl_ceiling_simple_1_over_frac": (enc + pe) / enc,
