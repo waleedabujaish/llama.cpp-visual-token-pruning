@@ -143,7 +143,7 @@ well above that range.
   <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Theoretical ceiling (linear in token count)</div>
 </div>
 <div class="card"><svg id="chart-speedup" width="900" height="320" viewBox="0 0 900 320"></svg></div>
-<div class="footnote">Theoretical ceiling = TTFT_llm(keep=1.0) &times; (n_tokens(1.0) / n_tokens(r)), i.e. the speedup if prefill scaled perfectly linearly with token count. Measured tracks it closely throughout (88&ndash;100% realized) &mdash; the gap grows slowly as keep shrinks, consistent with a small fixed per-call overhead that matters more as the variable part shrinks.</div>
+<div class="footnote">Theoretical ceiling = TTFT_llm(keep=1.0) &times; (n_tokens(1.0) / n_tokens(r)), i.e. the speedup if prefill scaled perfectly linearly with token count. Note the y-axis: the theoretical line reaches <b>25.8&times;</b> at keep=0.01 (token count shrinks 26&times;, and the formula assumes zero fixed overhead), which compresses the measured curve near the bottom on a shared linear scale &mdash; that's real, not a rendering error. Over the original range (keep 1.0&ndash;0.05) measured tracks theoretical closely (88&ndash;100% realized, table above). Below that, the two curves diverge sharply: real prefill can't shrink below some fixed per-call floor, so the naive linear-scaling ceiling becomes increasingly unrealistic at extreme token counts &mdash; a visual version of the same story the "% of ceiling" column tells (falling from ~90% to ~73&ndash;80%).</div>
 
 <h2>Encoder share of TTFT_vlm</h2>
 <div class="card"><svg id="chart-encfrac" width="900" height="280" viewBox="0 0 900 280"></svg></div>
@@ -296,8 +296,8 @@ function attachTooltip(svg) {
   }));
   lineChart('chart-speedup', points,
     [{key:'measured', color:c1, label:'Measured'}, {key:'theoretical', color:c2, label:'Theoretical ceiling'}],
-    {yMax: 6, xLabel: 'keep ratio (ordinal spacing)', xFmt: x=>x.toFixed(3).replace(/0+$/,'').replace(/\.$/,''),
-     yFmt: y=>y.toFixed(1)+'×', endFmt: v=>v.toFixed(2)+'×', tipFmt: v=>v.toFixed(3)+'×'});
+    {xLabel: 'keep ratio (ordinal spacing)', xFmt: x=>x.toFixed(3).replace(/0+$/,'').replace(/\.$/,''),
+     yFmt: y=>y.toFixed(0)+'×', endFmt: v=>v.toFixed(2)+'×', tipFmt: v=>v.toFixed(3)+'×'});
 })();
 
 // ---------- chart 3: encoder fraction ----------
