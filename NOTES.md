@@ -688,4 +688,6 @@ directly from the committed JSON before writing this):
   per the plan's own falsifiability rule, reported as refuted, not
   glossed over. (Note: I could not locate that exact prediction in the
   current `vtp-cpu-plan-v2.md` - see that file's own update for the
-  discrepancy.)
+  discrepancy.) This prediction appeared in the original project plan
+  (pre-v2 rewrite) and was dropped during a later plan revision; recorded
+  here for full provenance.
