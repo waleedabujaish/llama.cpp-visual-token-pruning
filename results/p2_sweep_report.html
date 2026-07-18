@@ -1,3 +1,4 @@
+<meta charset="utf-8">
 <title>Visual token pruning — keep-ratio sweep</title>
 <style>
   .viz-root {
@@ -61,7 +62,7 @@
   .legend { display: flex; gap: 18px; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
   .legend-item { display: flex; align-items: center; gap: 6px; }
   .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
-  svg { display: block; overflow: visible; }
+  svg { display: block; overflow: visible; width: 100%; height: auto; }
   .gridline { stroke: var(--line); stroke-width: 1; }
   .axis-text { fill: var(--text-muted); font-size: 10.5px; font-family: inherit; }
   .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
@@ -133,7 +134,7 @@ well above that range.
   <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>TTFT_vlm (encoder + prefill)</div>
   <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>TTFT_llm (prefill only)</div>
 </div>
-<div class="card"><svg id="chart-ttft" width="900" height="340"></svg></div>
+<div class="card"><svg id="chart-ttft" width="900" height="340" viewBox="0 0 900 340"></svg></div>
 <div class="footnote">Both curves fall monotonically from keep=1.0 to keep=0.05 (the gap between them is encoder time, nearly flat at 742.8ms &rarr; 660.4ms, while TTFT_llm drops 5407ms &rarr; 1030ms) &mdash; <b>then TTFT_vlm's mean stops decreasing and gets noisier</b> at keep=0.03 and below, staying above the keep=0.05 floor through keep=0.01. Thin vertical whiskers show each cell's observed min&ndash;max across 5 runs: tight everywhere above keep=0.05, wide below it. Whether this reflects genuine pruning-overhead-exceeds-savings or OS-level measurement noise dominating once runtime drops under ~2s is unresolved: the non-monotonic shape below keep=0.05 and best-case individual runs undercutting the keep=0.05 mean both lean toward noise-dominance, not a clean algorithmic floor.</div>
 
 <h2>Speedup vs theoretical ceiling (H1)</h2>
@@ -141,11 +142,11 @@ well above that range.
   <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Measured TTFT_llm speedup</div>
   <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Theoretical ceiling (linear in token count)</div>
 </div>
-<div class="card"><svg id="chart-speedup" width="900" height="320"></svg></div>
+<div class="card"><svg id="chart-speedup" width="900" height="320" viewBox="0 0 900 320"></svg></div>
 <div class="footnote">Theoretical ceiling = TTFT_llm(keep=1.0) &times; (n_tokens(1.0) / n_tokens(r)), i.e. the speedup if prefill scaled perfectly linearly with token count. Measured tracks it closely throughout (88&ndash;100% realized) &mdash; the gap grows slowly as keep shrinks, consistent with a small fixed per-call overhead that matters more as the variable part shrinks.</div>
 
 <h2>Encoder share of TTFT_vlm</h2>
-<div class="card"><svg id="chart-encfrac" width="900" height="280"></svg></div>
+<div class="card"><svg id="chart-encfrac" width="900" height="280" viewBox="0 0 900 280"></svg></div>
 <div class="footnote">Rises from 12.1% to 39.1% &mdash; not because the encoder gets slower, but because prefill (the denominator's other term) shrinks so much faster. At aggressive keep ratios the encoder becomes the next bottleneck to attack.</div>
 
 <h2>Prune-overhead isolation: encode_ms = A + B&middot;K</h2>
@@ -153,7 +154,7 @@ well above that range.
   <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Original-range points (K&ge;29)</div>
   <div class="legend-item"><span class="swatch" style="background:var(--status-crit)"></span>Extended points (K&lt;29, new)</div>
 </div>
-<div class="card"><svg id="chart-fit" width="900" height="340"></svg></div>
+<div class="card"><svg id="chart-fit" width="900" height="340" viewBox="0 0 900 340"></svg></div>
 <div class="footnote" id="fit-footnote"></div>
 
 <script>
