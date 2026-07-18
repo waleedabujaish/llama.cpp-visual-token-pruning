@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Dump llama.cpp mtmd encoder+projector output embeddings to .npy via ctypes.
 
-Binds the pinned build's dylibs directly (build/bin/libmtmd.dylib etc.) —
+Binds the pinned build's shared libraries directly (build/bin/libmtmd.dylib
+on macOS, .so on Linux) —
 no C++ written, no third-party bindings, so the numbers come from exactly the
 code under study. Feeds raw RGB pixels through mtmd_bitmap_init so the input
 is bit-identical to what the HF reference scripts consume (no stb/PIL decode
@@ -22,6 +23,7 @@ import argparse
 import ctypes as C
 import json
 import os
+import sys
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +33,9 @@ REPO_ROOT = Path(__file__).resolve().parent.parent.parent
 # llama.cpp checkout: $LLAMA_CPP_DIR, or a sibling clone of this repo
 LLAMA_CPP = Path(os.environ.get("LLAMA_CPP_DIR", REPO_ROOT.parent / "llama.cpp"))
 BIN_DIR = LLAMA_CPP / "build/bin"
+# shared library extension: macOS builds emit .dylib, Linux emits .so (this
+# script originally only ran on macOS; Linux support added for the x86 CI sweep)
+SHLIB_EXT = ".dylib" if sys.platform == "darwin" else ".so"
 
 MTMD_INPUT_CHUNK_TYPE_TEXT = 0
 MTMD_INPUT_CHUNK_TYPE_IMAGE = 1
@@ -123,9 +128,9 @@ class mtmd_input_text(C.Structure):
 
 def load_libs(lib_dir=None, ctx_params_type=mtmd_context_params):
     d = Path(lib_dir) if lib_dir else BIN_DIR
-    ggml = C.CDLL(str(d / "libggml.dylib"), mode=C.RTLD_GLOBAL)
-    llama = C.CDLL(str(d / "libllama.dylib"), mode=C.RTLD_GLOBAL)
-    mtmd = C.CDLL(str(d / "libmtmd.dylib"), mode=C.RTLD_GLOBAL)
+    ggml = C.CDLL(str(d / f"libggml{SHLIB_EXT}"), mode=C.RTLD_GLOBAL)
+    llama = C.CDLL(str(d / f"libllama{SHLIB_EXT}"), mode=C.RTLD_GLOBAL)
+    mtmd = C.CDLL(str(d / f"libmtmd{SHLIB_EXT}"), mode=C.RTLD_GLOBAL)
 
     ggml.ggml_backend_load_all.restype = None
 

@@ -36,6 +36,10 @@ def main():
     ap.add_argument("--warmup", type=int, default=1)
     ap.add_argument("--cooldown-s", type=float, default=30.0)
     ap.add_argument("--tag-prefix", default="p2_sweep")
+    ap.add_argument("--platform-tag", default="apple-m4-pro-dedicated",
+                    help="forwarded to bench_baseline.py -- see its --platform-tag help")
+    ap.add_argument("--build-desc", default=None,
+                    help="forwarded to bench_baseline.py's --build-desc if set, else its default")
     ap.add_argument("--dry-run", action="store_true", help="print what would run, do nothing")
     args = ap.parse_args()
 
@@ -51,10 +55,12 @@ def main():
             "--bin", args.bin, "--llama-repo", args.llama_repo,
             "--cooldown-s", str(args.cooldown_s),
             "--warmup", str(args.warmup), "--runs", str(args.runs),
-            "--tag", tag,
+            "--tag", tag, "--platform-tag", args.platform_tag,
             "--extra-arg=--visual-keep", f"--extra-arg={r}",
             "--extra-arg=--visual-prune-method", "--extra-arg=cls",
         ]
+        if args.build_desc is not None:
+            cmd += ["--build-desc", args.build_desc]
         print(f"[sweep] {tag}: {' '.join(cmd)}", flush=True)
         if args.dry_run:
             continue

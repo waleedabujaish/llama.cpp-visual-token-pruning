@@ -45,6 +45,12 @@ def main():
     ratios = sorted(cells.keys(), reverse=True)
     print(f"[analysis] found {len(ratios)} cells: {ratios}")
 
+    platform_tags = sorted({c.get("platform_tag", "(unset)") for c in cells.values()})
+    if len(platform_tags) > 1:
+        print(f"[analysis] WARNING: cells span multiple platform_tags {platform_tags} -- "
+              f"this sweep is not internally comparable, results were likely mixed by "
+              f"accident (e.g. a tag_prefix collision across platforms)", flush=True)
+
     # ---- table ----
     table = []
     for r in ratios:
@@ -145,11 +151,14 @@ def main():
 
     out = {
         "tag_prefix": args.tag_prefix,
+        "platform_tags": platform_tags,
         "table": table,
         "prune_overhead_fit": fit_result,
         "bend_slopes_ttft_vlm_vs_keep": bends,
     }
-    out_path = REPO_ROOT / "results" / "p2_sweep_analysis.json"
+    # named by tag_prefix so a different platform/sweep's analysis (e.g.
+    # p2_sweep_x86) never overwrites another's (e.g. the default p2_sweep, M4)
+    out_path = REPO_ROOT / "results" / f"{args.tag_prefix}_analysis.json"
     out_path.write_text(json.dumps(out, indent=2))
     print(f"[analysis] wrote {out_path}")
 

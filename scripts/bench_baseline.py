@@ -88,6 +88,49 @@ def sysctl(key: str) -> str:
         return ""
 
 
+def cpu_env_info() -> dict:
+    """CPU/memory info for provenance. macOS uses sysctl (P/E-core split
+    available); Linux (e.g. GitHub Actions runners, no P/E distinction --
+    those fields are left empty rather than guessed) reads /proc directly.
+    """
+    if sys.platform == "darwin":
+        return {
+            "cpu": sysctl("machdep.cpu.brand_string"),
+            "n_cores": sysctl("hw.ncpu"),
+            "p_cores": sysctl("hw.perflevel0.physicalcpu"),
+            "e_cores": sysctl("hw.perflevel1.physicalcpu"),
+            "mem_bytes": sysctl("hw.memsize"),
+        }
+    # Linux
+    cpu_model = ""
+    try:
+        for line in Path("/proc/cpuinfo").read_text().splitlines():
+            if line.lower().startswith("model name"):
+                cpu_model = line.split(":", 1)[1].strip()
+                break
+    except Exception:
+        pass
+    n_cores = ""
+    try:
+        n_cores = subprocess.run(["nproc"], capture_output=True, text=True).stdout.strip()
+    except Exception:
+        pass
+    mem_bytes = ""
+    try:
+        for line in Path("/proc/meminfo").read_text().splitlines():
+            if line.startswith("MemTotal:"):
+                mem_kib = int(line.split()[1])  # "MemTotal:  16384000 kB"
+                mem_bytes = str(mem_kib * 1024)
+                break
+    except Exception:
+        pass
+    return {
+        "cpu": cpu_model, "n_cores": n_cores,
+        "p_cores": "", "e_cores": "",  # no P/E-core distinction on this platform
+        "mem_bytes": mem_bytes,
+    }
+
+
 def parse_run(log: str) -> dict:
     encode = [int(m) for m in RE_ENCODE.findall(log)]
     img_dec = [int(m) for m in RE_IMG_DECODE.findall(log)]
@@ -167,7 +210,20 @@ def main():
     ap.add_argument("--no-mem", action="store_true",
                     help="skip wrapping with /usr/bin/time -l (peak RSS/footprint tracking); "
                          "macOS-only wrapper, disable if running elsewhere")
+    ap.add_argument("--platform-tag", default="apple-m4-pro-dedicated",
+                    help="identifies the run environment's control level, e.g. "
+                         "apple-m4-pro-dedicated vs github-actions-x86-shared -- results from "
+                         "different platform tags are not directly comparable as equally "
+                         "controlled and must not be conflated in analysis")
+    ap.add_argument("--build-desc", default="cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
+                    help="free-text build description recorded in provenance; override for "
+                         "non-macOS builds (e.g. Linux has no Metal/Accelerate)")
     args = ap.parse_args()
+    # /usr/bin/time -l is a BSD/macOS-only flag (GNU time on Linux uses -v with a
+    # different output format this script doesn't parse); auto-skip off-macOS
+    # rather than relying on every caller to remember --no-mem, since getting
+    # this wrong would break the wrapped command entirely, not just memory stats.
+    use_mem_wrapper = (not args.no_mem) and sys.platform == "darwin"
 
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     raw_dir = REPO_ROOT / "results" / "raw" / f"{ts}_{args.tag}"
@@ -191,7 +247,7 @@ def main():
         "--chat-template", "vicuna",
         "-v",  # timing lines (image decode, llama_perf) only print at full verbosity
     ] + args.extra_arg
-    if not args.no_mem:
+    if use_mem_wrapper:
         cmd = ["/usr/bin/time", "-l"] + cmd
 
     print(f"[bench] command: {' '.join(cmd)}", flush=True)
@@ -218,11 +274,11 @@ def main():
         parsed = parse_run(log)
         parsed["wall_s_process"] = wall_s
         parsed["label"] = label
-        if not args.no_mem:
+        if use_mem_wrapper:
             mem = parse_mem(proc.stderr)
             parsed["max_rss_mib"] = mem["max_rss_mib"]
             parsed["peak_footprint_mib"] = mem["peak_footprint_mib"]
-        mem_str = (f" rss={parsed['max_rss_mib']:.0f}MiB" if not args.no_mem and parsed.get("max_rss_mib") else "")
+        mem_str = (f" rss={parsed['max_rss_mib']:.0f}MiB" if use_mem_wrapper and parsed.get('max_rss_mib') else "")
         print(f"[bench] {label}: encode={parsed['encode_ms']:.0f}ms "
               f"prompt_eval={parsed['prompt_eval_ms']:.0f}ms ({parsed['n_prompt_tokens']} tok) "
               f"img_decode={parsed['image_decode_ms']:.0f}ms "
@@ -238,7 +294,7 @@ def main():
     agg_keys = ["encode_ms", "image_decode_ms", "prompt_eval_ms", "eval_ms",
                 "decode_tok_per_s", "load_ms", "ttft_llm_ms", "ttft_vlm_ms",
                 "encoder_fraction", "total_ms", "wall_s_process"]
-    if not args.no_mem:
+    if use_mem_wrapper:
         agg_keys += ["max_rss_mib", "peak_footprint_mib"]
     agg = {k: mean_std([r[k] for r in runs if r.get(k) is not None]) for k in agg_keys
            if any(r.get(k) is not None for r in runs)}
@@ -261,14 +317,11 @@ def main():
             "cooldown_s_between_runs": args.cooldown_s,
             "extra_args": args.extra_arg,
         },
+        "platform_tag": args.platform_tag,
         "environment": {
             "llama_cpp_build": resolve_build_provenance(args.bin, args.llama_repo),
-            "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
-            "cpu": sysctl("machdep.cpu.brand_string"),
-            "n_cores": sysctl("hw.ncpu"),
-            "p_cores": sysctl("hw.perflevel0.physicalcpu"),
-            "e_cores": sysctl("hw.perflevel1.physicalcpu"),
-            "mem_bytes": sysctl("hw.memsize"),
+            "build": args.build_desc,
+            **cpu_env_info(),
             "os": f"{platform.system()} {platform.release()} ({platform.machine()})",
             "load_avg_1_5_15_at_start": list(load_avg_start),
             "load_avg_1_5_15_at_end": list(os.getloadavg()),

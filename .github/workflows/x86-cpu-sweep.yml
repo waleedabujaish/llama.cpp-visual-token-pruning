@@ -1,0 +1,231 @@
+name: x86 CPU sweep
+
+# Manual only -- this is a multi-GB model download + a from-scratch C++ build +
+# a real benchmark sweep (tens of minutes), not something to run on every push.
+on:
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+env:
+  # Pinned to exact commits, verified after checkout (see "Verify pinned
+  # commits" step below) -- so this workflow always builds the same code the
+  # M4 sweep ran even if either branch moves later, and FAILS LOUDLY if it
+  # doesn't rather than silently building something else. Checkout itself
+  # fetches by branch name (the standard, unambiguously-reliable
+  # actions/checkout path -- default shallow fetch of a named ref has no
+  # edge cases) rather than by raw SHA: actions/checkout's handling of an
+  # arbitrary commit SHA under a shallow fetch depends on GitHub's
+  # uploadpack.allowReachableSHA1InWant support, which likely covers this
+  # (both SHAs are currently branch tips) but isn't something I can verify
+  # without a live run, and the alternative hedge (fetch-depth: 0) would mean
+  # an unshallow clone of llama.cpp's full history -- a large repo -- on
+  # every run. Branch-name fetch + explicit SHA verification gets the same
+  # pinning guarantee without depending on the uncertain path at all.
+  # local-test-both:      master (e8f19cc0) + both correctness fixes, no pruning
+  #                        code -- Gate 1's "no pruning at all" reference.
+  # visual-token-pruning: local-test-both + --visual-keep/--visual-prune-method
+  #                        -- same commit used for every M4 result in this repo.
+  LOCAL_TEST_BOTH_SHA: 5b90586353cadd295e46c23118c1329cfdc86d3c
+  VISUAL_TOKEN_PRUNING_SHA: 82f2ccb5cc4c12f610726c71a6f941c64e11daac
+  MODEL_GGUF_SHA256: 2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf
+  MMPROJ_SHA256: 50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1
+
+jobs:
+  x86-sweep:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      # ---------- checkout ----------
+      - name: Checkout vision_tokens (this repo)
+        uses: actions/checkout@v4
+
+      - name: Checkout llama.cpp -- local-test-both (pristine, no pruning code)
+        uses: actions/checkout@v4
+        with:
+          repository: waleedabujaish/llama.cpp
+          ref: local-test-both
+          path: llama.cpp-pristine
+
+      - name: Checkout llama.cpp -- visual-token-pruning (fixes + pruning feature)
+        uses: actions/checkout@v4
+        with:
+          repository: waleedabujaish/llama.cpp
+          ref: visual-token-pruning
+          path: llama.cpp-prune
+
+      - name: Verify pinned commits
+        # Branch-name checkout above is reliable but only gets us "whatever
+        # the branch currently points to" -- this is the actual pin. Fails
+        # the job immediately, before any build time is spent, if either
+        # branch has moved since these SHAs were recorded.
+        run: |
+          pristine_head="$(git -C llama.cpp-pristine rev-parse HEAD)"
+          if [ "$pristine_head" != "${{ env.LOCAL_TEST_BOTH_SHA }}" ]; then
+            echo "FAIL: local-test-both HEAD is $pristine_head, expected ${{ env.LOCAL_TEST_BOTH_SHA }}"
+            echo "The branch has moved since this workflow was written -- update LOCAL_TEST_BOTH_SHA"
+            echo "(after confirming the new HEAD is still what Gate 1 should compare against)."
+            exit 1
+          fi
+          echo "OK: local-test-both HEAD matches pinned $pristine_head"
+          prune_head="$(git -C llama.cpp-prune rev-parse HEAD)"
+          if [ "$prune_head" != "${{ env.VISUAL_TOKEN_PRUNING_SHA }}" ]; then
+            echo "FAIL: visual-token-pruning HEAD is $prune_head, expected ${{ env.VISUAL_TOKEN_PRUNING_SHA }}"
+            echo "The branch has moved since this workflow was written -- update VISUAL_TOKEN_PRUNING_SHA"
+            echo "(after confirming the new HEAD is the code you actually want to sweep)."
+            exit 1
+          fi
+          echo "OK: visual-token-pruning HEAD matches pinned $prune_head"
+
+      # ---------- toolchain ----------
+      - name: Install build dependencies
+        run: sudo apt-get update && sudo apt-get install -y build-essential cmake libcurl4-openssl-dev pkg-config
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: pip install numpy pillow
+
+      # ---------- model files (cached across runs -- ~4.6GB combined) ----------
+      - name: Cache model files
+        id: cache-models
+        uses: actions/cache@v4
+        with:
+          path: models
+          key: llava-v1.5-7b-models-${{ env.MODEL_GGUF_SHA256 }}-${{ env.MMPROJ_SHA256 }}
+
+      - name: Download model files
+        if: steps.cache-models.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p models
+          curl -L --fail --retry 3 -o models/llava-v1.5-7b-Q4_K_M.gguf \
+            https://huggingface.co/second-state/Llava-v1.5-7B-GGUF/resolve/main/llava-v1.5-7b-Q4_K_M.gguf
+          curl -L --fail --retry 3 -o models/llava-v1.5-7b-mmproj-model-f16.gguf \
+            https://huggingface.co/second-state/Llava-v1.5-7B-GGUF/resolve/main/llava-v1.5-7b-mmproj-model-f16.gguf
+
+      - name: Verify model checksums
+        # Always runs, cache hit or not -- catches cache corruption too, not just
+        # a bad download. Same files/hashes recorded in NOTES.md for the M4 runs.
+        run: |
+          echo "${{ env.MODEL_GGUF_SHA256 }}  models/llava-v1.5-7b-Q4_K_M.gguf" | sha256sum -c -
+          echo "${{ env.MMPROJ_SHA256 }}  models/llava-v1.5-7b-mmproj-model-f16.gguf" | sha256sum -c -
+
+      # ---------- build (CPU-only Release; no CUDA on this runner) ----------
+      - name: Build llama.cpp -- pristine
+        run: |
+          cmake -S llama.cpp-pristine -B llama.cpp-pristine/build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF
+          cmake --build llama.cpp-pristine/build --target llama-mtmd-cli -j"$(nproc)"
+
+      - name: Build llama.cpp -- visual-token-pruning
+        run: |
+          cmake -S llama.cpp-prune -B llama.cpp-prune/build -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF
+          cmake --build llama.cpp-prune/build --target llama-mtmd-cli -j"$(nproc)"
+
+      - name: Verify build provenance
+        # Two independent signals per binary, not just --version (a stale
+        # build-info.cpp from an incremental rebuild without reconfigure bit us
+        # once on M4 -- see NOTES.md "Pruning acceptance gates"). Both builds
+        # here are fresh configure+build, so --version should be trustworthy,
+        # but the flag-presence check is what actually matters and costs nothing.
+        run: |
+          echo "--- pristine ---"
+          ./llama.cpp-pristine/build/bin/llama-mtmd-cli --version
+          if ./llama.cpp-pristine/build/bin/llama-mtmd-cli --help | grep -q visual-keep; then
+            echo "FAIL: pristine build unexpectedly has --visual-keep"; exit 1
+          fi
+          echo "OK: pristine build correctly lacks --visual-keep"
+          echo "--- prune ---"
+          ./llama.cpp-prune/build/bin/llama-mtmd-cli --version
+          if ! ./llama.cpp-prune/build/bin/llama-mtmd-cli --help | grep -q visual-keep; then
+            echo "FAIL: prune build missing --visual-keep"; exit 1
+          fi
+          echo "OK: prune build has --visual-keep"
+
+      # ---------- Gate 1: keep=1.0 bit-identity, on THIS compiler/architecture ----------
+      # Different compiler (gcc vs AppleClang) and architecture (x86_64 vs arm64) is a
+      # new environment for a property that was only ever proven on M4 -- cheap
+      # insurance before trusting any timing number from this platform. Hard-fails
+      # the job (no continue-on-error) so a mismatch stops before the sweep runs.
+      - name: Gate 1 -- keep=1.0 bit-identity
+        run: |
+          python3 scripts/phase1/dump_llamacpp_embd.py --image assets/phase1/cat_336.png \
+            --out /tmp/gate1_pristine.npy --lib-dir llama.cpp-pristine/build/bin \
+            --model models/llava-v1.5-7b-Q4_K_M.gguf \
+            --mmproj models/llava-v1.5-7b-mmproj-model-f16.gguf --fa auto
+          python3 scripts/phase1/dump_llamacpp_embd.py --image assets/phase1/cat_336.png \
+            --out /tmp/gate1_prune.npy --lib-dir llama.cpp-prune/build/bin \
+            --model models/llava-v1.5-7b-Q4_K_M.gguf \
+            --mmproj models/llava-v1.5-7b-mmproj-model-f16.gguf --fa auto \
+            --pruned-abi --visual-keep 1.0 --visual-prune-method cls
+          python3 -c "
+          import numpy as np, sys
+          a = np.load('/tmp/gate1_pristine.npy')
+          b = np.load('/tmp/gate1_prune.npy')
+          identical = np.array_equal(a, b)
+          print('Gate 1 (keep=1.0 bit-identity) on github-actions-x86-shared:', 'PASS' if identical else 'FAIL')
+          if not identical:
+              print('shapes:', a.shape, b.shape)
+              print('max abs diff:', np.abs(a - b).max())
+              sys.exit(1)
+          "
+
+      # ---------- the sweep ----------
+      # Same keep ratios and n=5 as the M4 sweep; the extreme H2-chasing ratios
+      # (0.03 down to 0.01) are intentionally not repeated here -- already
+      # answered as ambiguous on M4 (NOTES.md "Sweep extension for H2"), not
+      # worth re-litigating on a noisier, less-controlled platform.
+      #
+      # --cooldown-s 0: thermal carryover between runs isn't the concern on an
+      # ephemeral CI VM (fresh state doesn't persist meaningfully run-to-run the
+      # way it does on a physical machine under sustained load). What IS a
+      # concern here that never applied on M4: noisy-neighbor contention from
+      # other tenants sharing the physical host, invisible to this job and
+      # uncontrollable from inside it. platform_tag=github-actions-x86-shared
+      # exists specifically so this can never get silently averaged in with the
+      # apple-m4-pro-dedicated numbers.
+      - name: Run keep-ratio sweep
+        run: |
+          python3 scripts/sweep_prune.py \
+            --bin llama.cpp-prune/build/bin/llama-mtmd-cli \
+            --llama-repo llama.cpp-prune \
+            --ratios "1.0,0.75,0.5,0.25,0.1,0.05" \
+            --runs 5 --warmup 1 --cooldown-s 0 \
+            --tag-prefix p2_sweep_x86 \
+            --platform-tag github-actions-x86-shared \
+            --build-desc "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF (CPU-only, no BLAS backend configured)"
+
+      - name: Run analysis
+        run: python3 scripts/sweep_analysis.py --tag-prefix p2_sweep_x86
+
+      # ---------- commit results back ----------
+      - name: Commit results
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add results/
+          if git diff --cached --quiet; then
+            echo "No result changes to commit"
+            exit 0
+          fi
+          git commit -m "$(cat <<EOF
+          x86 CPU sweep (GitHub Actions, shared runner): Gate 1 + keep-ratio matrix
+
+          Gate 1 (keep=1.0 bit-identity) and the same 6-ratio keep matrix as the
+          M4 sweep (keep in 1.0/0.75/0.5/0.25/0.1/0.05, n=5+warmup), run on
+          ubuntu-latest against local-test-both ($LOCAL_TEST_BOTH_SHA) and
+          visual-token-pruning ($VISUAL_TOKEN_PRUNING_SHA). Tagged
+          platform=github-actions-x86-shared throughout -- a shared, virtualized
+          runner with possible noisy-neighbor contention, not directly
+          comparable to the apple-m4-pro-dedicated results as equally
+          controlled.
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          EOF
+          )"
+          git fetch origin "${{ github.ref_name }}"
+          git rebase "origin/${{ github.ref_name }}" || { echo "Rebase conflict, not force-pushing"; git rebase --abort; exit 1; }
+          git push origin "HEAD:${{ github.ref_name }}"
