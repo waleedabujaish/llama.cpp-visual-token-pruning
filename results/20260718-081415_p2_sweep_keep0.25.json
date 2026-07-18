@@ -1,0 +1,376 @@
+{
+  "tag": "p2_sweep_keep0.25",
+  "timestamp": "20260718-081415",
+  "provenance": {
+    "model_repo": "second-state/Llava-v1.5-7B-GGUF",
+    "model_files": [
+      "llava-v1.5-7b-Q4_K_M.gguf",
+      "llava-v1.5-7b-mmproj-model-f16.gguf"
+    ],
+    "substitution_reason": "Originally planned mys/ggml_llava-v1.5-7b fails to load at the pinned llama.cpp commit: its 2023-era mmproj lacks the clip.projector_type GGUF key required by the current loader (clip.cpp:1153). second-state repack is the same LLaVA-1.5-7B weights and is used by llama.cpp's own vision test suite (tools/mtmd/tests.sh:95).",
+    "config_frozen": "Run config frozen 2026-07-17 for all cells incl. pruned runs: -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v. Rationale in NOTES.md. -t 8 = P-cores only (deliberate; E-core/all-core ablation deferred). -ub 1024 keeps the 576-token non-causal image batch in one ubatch."
+  },
+  "command": [
+    "/usr/bin/time",
+    "-l",
+    "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin/llama-mtmd-cli",
+    "-m",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "--mmproj",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "--image",
+    "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+    "-p",
+    "Describe the image in detail.",
+    "-n",
+    "32",
+    "--temp",
+    "0",
+    "--seed",
+    "42",
+    "-t",
+    "8",
+    "-tb",
+    "8",
+    "-b",
+    "2048",
+    "-ub",
+    "1024",
+    "--perf",
+    "--chat-template",
+    "vicuna",
+    "-v",
+    "--visual-keep",
+    "0.25",
+    "--visual-prune-method",
+    "cls"
+  ],
+  "prompt": "Describe the image in detail.",
+  "config": {
+    "n_predict": 32,
+    "threads": 8,
+    "batch": 2048,
+    "ubatch": 1024,
+    "temp": 0.0,
+    "seed": 42,
+    "warmup_discarded": 1,
+    "timed_runs": 5,
+    "cooldown_s_between_runs": 30.0,
+    "extra_args": [
+      "--visual-keep",
+      "0.25",
+      "--visual-prune-method",
+      "cls"
+    ]
+  },
+  "environment": {
+    "llama_cpp_build": {
+      "bin_path": "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 10059 (82f2ccb5c)",
+      "bin_commit_short": "82f2ccb5c",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
+    "cpu": "Apple M4 Pro",
+    "n_cores": "12",
+    "p_cores": "8",
+    "e_cores": "4",
+    "mem_bytes": "25769803776",
+    "os": "Darwin 24.2.0 (arm64)",
+    "load_avg_1_5_15_at_start": [
+      2.79248046875,
+      2.66357421875,
+      2.31591796875
+    ],
+    "load_avg_1_5_15_at_end": [
+      1.7041015625,
+      2.28955078125,
+      2.22607421875
+    ]
+  },
+  "files": {
+    "model": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+      "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+    },
+    "mmproj": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+      "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+    },
+    "image": {
+      "path": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/coco_val2017_000000039769.jpg",
+      "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
+    }
+  },
+  "runs": [
+    {
+      "encode_ms": 668.0,
+      "image_decode_ms": 1058.0,
+      "prompt_eval_ms": 1881.05,
+      "n_prompt_tokens": 161,
+      "eval_ms": 639.31,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 48.48977804195148,
+      "load_ms": 1550.53,
+      "total_ms": 2686.39,
+      "ttft_llm_ms": 1881.05,
+      "ttft_vlm_ms": 2549.05,
+      "encoder_fraction": 0.26205841391891094,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 4.411427540995646,
+      "label": "run1",
+      "max_rss_mib": 10284.234375,
+      "peak_footprint_mib": 6553.773658752441
+    },
+    {
+      "encode_ms": 675.0,
+      "image_decode_ms": 1058.0,
+      "prompt_eval_ms": 1890.05,
+      "n_prompt_tokens": 161,
+      "eval_ms": 638.88,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 48.522414224893566,
+      "load_ms": 1555.02,
+      "total_ms": 2718.81,
+      "ttft_llm_ms": 1890.05,
+      "ttft_vlm_ms": 2565.05,
+      "encoder_fraction": 0.2631527650533128,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 4.439630709006451,
+      "label": "run2",
+      "max_rss_mib": 10285.65625,
+      "peak_footprint_mib": 6552.804908752441
+    },
+    {
+      "encode_ms": 671.0,
+      "image_decode_ms": 1059.0,
+      "prompt_eval_ms": 1885.17,
+      "n_prompt_tokens": 161,
+      "eval_ms": 639.15,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 48.50191660799499,
+      "load_ms": 1562.45,
+      "total_ms": 2682.31,
+      "ttft_llm_ms": 1885.17,
+      "ttft_vlm_ms": 2556.17,
+      "encoder_fraction": 0.26250210275529406,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 4.4238520830112975,
+      "label": "run3",
+      "max_rss_mib": 10279.859375,
+      "peak_footprint_mib": 6547.398590087891
+    },
+    {
+      "encode_ms": 668.0,
+      "image_decode_ms": 1059.0,
+      "prompt_eval_ms": 1881.34,
+      "n_prompt_tokens": 161,
+      "eval_ms": 638.56,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 48.54673014282135,
+      "load_ms": 1555.22,
+      "total_ms": 2675.75,
+      "ttft_llm_ms": 1881.34,
+      "ttft_vlm_ms": 2549.34,
+      "encoder_fraction": 0.26202860348168544,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 4.402992499992251,
+      "label": "run4",
+      "max_rss_mib": 10283.875,
+      "peak_footprint_mib": 6552.664260864258
+    },
+    {
+      "encode_ms": 668.0,
+      "image_decode_ms": 1057.0,
+      "prompt_eval_ms": 1880.05,
+      "n_prompt_tokens": 161,
+      "eval_ms": 682.33,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 45.43256195682441,
+      "load_ms": 1549.82,
+      "total_ms": 2719.21,
+      "ttft_llm_ms": 1880.05,
+      "ttft_vlm_ms": 2548.05,
+      "encoder_fraction": 0.2621612605718098,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 4.439584832987748,
+      "label": "run5",
+      "max_rss_mib": 10287.421875,
+      "peak_footprint_mib": 6557.054954528809
+    }
+  ],
+  "aggregate": {
+    "encode_ms": {
+      "mean": 670.0,
+      "std": 3.082207001484488,
+      "n": 5,
+      "values": [
+        668.0,
+        675.0,
+        671.0,
+        668.0,
+        668.0
+      ]
+    },
+    "image_decode_ms": {
+      "mean": 1058.2,
+      "std": 0.8366600265340756,
+      "n": 5,
+      "values": [
+        1058.0,
+        1058.0,
+        1059.0,
+        1059.0,
+        1057.0
+      ]
+    },
+    "prompt_eval_ms": {
+      "mean": 1883.532,
+      "std": 4.130886103489194,
+      "n": 5,
+      "values": [
+        1881.05,
+        1890.05,
+        1885.17,
+        1881.34,
+        1880.05
+      ]
+    },
+    "eval_ms": {
+      "mean": 647.646,
+      "std": 19.391034784147063,
+      "n": 5,
+      "values": [
+        639.31,
+        638.88,
+        639.15,
+        638.56,
+        682.33
+      ]
+    },
+    "decode_tok_per_s": {
+      "mean": 47.89868019489716,
+      "std": 1.3787714526177421,
+      "n": 5,
+      "values": [
+        48.48977804195148,
+        48.522414224893566,
+        48.50191660799499,
+        48.54673014282135,
+        45.43256195682441
+      ]
+    },
+    "load_ms": {
+      "mean": 1554.608,
+      "std": 5.039749001686531,
+      "n": 5,
+      "values": [
+        1550.53,
+        1555.02,
+        1562.45,
+        1555.22,
+        1549.82
+      ]
+    },
+    "ttft_llm_ms": {
+      "mean": 1883.532,
+      "std": 4.130886103489194,
+      "n": 5,
+      "values": [
+        1881.05,
+        1890.05,
+        1885.17,
+        1881.34,
+        1880.05
+      ]
+    },
+    "ttft_vlm_ms": {
+      "mean": 2553.532,
+      "std": 7.199598599922077,
+      "n": 5,
+      "values": [
+        2549.05,
+        2565.05,
+        2556.17,
+        2549.34,
+        2548.05
+      ]
+    },
+    "encoder_fraction": {
+      "mean": 0.2623806291562026,
+      "std": 0.0004708548049460465,
+      "n": 5,
+      "values": [
+        0.26205841391891094,
+        0.2631527650533128,
+        0.26250210275529406,
+        0.26202860348168544,
+        0.2621612605718098
+      ]
+    },
+    "total_ms": {
+      "mean": 2696.494,
+      "std": 20.90221710728316,
+      "n": 5,
+      "values": [
+        2686.39,
+        2718.81,
+        2682.31,
+        2675.75,
+        2719.21
+      ]
+    },
+    "wall_s_process": {
+      "mean": 4.423497533198679,
+      "std": 0.01647230539644847,
+      "n": 5,
+      "values": [
+        4.411427540995646,
+        4.439630709006451,
+        4.4238520830112975,
+        4.402992499992251,
+        4.439584832987748
+      ]
+    },
+    "max_rss_mib": {
+      "mean": 10284.209375,
+      "std": 2.803949676628042,
+      "n": 5,
+      "values": [
+        10284.234375,
+        10285.65625,
+        10279.859375,
+        10283.875,
+        10287.421875
+      ]
+    },
+    "peak_footprint_mib": {
+      "mean": 6552.739274597168,
+      "std": 3.4723151420610185,
+      "n": 5,
+      "values": [
+        6553.773658752441,
+        6552.804908752441,
+        6547.398590087891,
+        6552.664260864258,
+        6557.054954528809
+      ]
+    }
+  },
+  "kv_buffer_mib": 2048.0,
+  "derived": {
+    "encoder_fraction_of_ttft_vlm": 0.2623816736974512,
+    "amdahl_ceiling_simple_1_over_frac": 3.8112417910447762,
+    "amdahl_ceiling_refined_keep0": 1.7076689323842467,
+    "note": "simple = 1/encoder_fraction (plan \u00a71); refined = keep->0 limit where only the image-embedding part of prefill (image_decode_ms) is prunable"
+  },
+  "determinism": {
+    "identical_output_across_timed_runs": true,
+    "generated_text_first_run": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch"
+  },
+  "raw_logs_dir": "results/raw/20260718-081415_p2_sweep_keep0.25"
+}

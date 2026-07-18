@@ -1,0 +1,331 @@
+<title>Visual token pruning — keep-ratio sweep</title>
+<style>
+  .viz-root {
+    color-scheme: light;
+    --surface-1:      #fcfcfb;
+    --surface-2:      #f4f3f0;
+    --text-primary:   #0b0b0b;
+    --text-secondary: #52514e;
+    --text-muted:     #83817a;
+    --line:           #e3e1da;
+    --series-1:       #2a78d6; /* blue: TTFT_vlm / measured speedup / encoder fraction */
+    --series-2:       #008300; /* green: TTFT_llm / theoretical ceiling */
+    --series-3:       #eb6834; /* orange: fit line / overhead marker */
+    --status-warn:    #fab219;
+    --status-crit:    #d03b3b;
+    --status-good:    #0ca30c;
+    max-width: 980px;
+    margin: 0 auto;
+    padding: 32px 20px 80px;
+    font-family: -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    color: var(--text-primary);
+    background: var(--surface-1);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:where(:not([data-theme="light"])) .viz-root {
+      color-scheme: dark;
+      --surface-1: #1a1a19; --surface-2: #232322;
+      --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8d84;
+      --line: #34332f;
+      --series-1: #3987e5; --series-2: #008300; --series-3: #d95926;
+    }
+  }
+  :root[data-theme="dark"] .viz-root {
+    color-scheme: dark;
+    --surface-1: #1a1a19; --surface-2: #232322;
+    --text-primary: #ffffff; --text-secondary: #c3c2b7; --text-muted: #8f8d84;
+    --line: #34332f;
+    --series-1: #3987e5; --series-2: #008300; --series-3: #d95926;
+  }
+
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  h2 { font-size: 15px; margin: 40px 0 4px; color: var(--text-primary); }
+  .subtitle { color: var(--text-secondary); font-size: 13px; margin-bottom: 28px; }
+  .lede { font-size: 14px; line-height: 1.55; color: var(--text-secondary); max-width: 760px; }
+  .card {
+    background: var(--surface-2); border-radius: 10px; padding: 18px 20px; margin-top: 14px;
+  }
+  .callout {
+    border-left: 3px solid var(--status-warn); background: var(--surface-2);
+    border-radius: 0 8px 8px 0; padding: 14px 18px; margin: 14px 0; font-size: 13.5px;
+    line-height: 1.55; color: var(--text-secondary);
+  }
+  .callout b { color: var(--text-primary); }
+  .callout.crit { border-left-color: var(--status-crit); }
+  table { border-collapse: collapse; width: 100%; font-size: 12.5px; margin-top: 10px; }
+  th, td { text-align: right; padding: 7px 10px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--text-secondary); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .02em; }
+  td { color: var(--text-primary); font-variant-numeric: tabular-nums; }
+  .muted { color: var(--text-muted); }
+  .legend { display: flex; gap: 18px; font-size: 12px; color: var(--text-secondary); margin-bottom: 4px; }
+  .legend-item { display: flex; align-items: center; gap: 6px; }
+  .swatch { width: 10px; height: 10px; border-radius: 2px; flex: none; }
+  svg { display: block; overflow: visible; }
+  .gridline { stroke: var(--line); stroke-width: 1; }
+  .axis-text { fill: var(--text-muted); font-size: 10.5px; font-family: inherit; }
+  .line { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+  .dot { stroke: var(--surface-2); stroke-width: 2; }
+  .dot-hit { fill: transparent; cursor: pointer; }
+  .direct-label { font-size: 11px; font-weight: 600; fill: var(--text-primary); }
+  .tooltip {
+    position: absolute; pointer-events: none; background: var(--surface-1);
+    border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px;
+    font-size: 11.5px; color: var(--text-primary); box-shadow: 0 4px 14px rgba(0,0,0,.15);
+    opacity: 0; transition: opacity .1s; white-space: nowrap; z-index: 10;
+  }
+  .fit-line { stroke: var(--series-3); stroke-width: 1.5; stroke-dasharray: 4 3; }
+  .footnote { font-size: 12px; color: var(--text-muted); margin-top: 10px; line-height: 1.5; }
+  code { font-size: 12px; background: var(--surface-2); padding: 1px 5px; border-radius: 4px; }
+</style>
+
+<div class="viz-root">
+
+<h1>Visual token pruning — keep-ratio sweep</h1>
+<div class="subtitle">LLaVA-1.5-7B, CPU-only (Apple M4 Pro), build-prune @ 82f2ccb5c · keep &isin; {1.0, 0.75, 0.5, 0.25, 0.1, 0.05} · n=5 + warmup, cooled 30s/run</div>
+
+<p class="lede">
+TTFT_llm speedup climbs from 1.0&times; to <b>5.25&times;</b> at keep=0.05, realizing
+<b>88&ndash;100%</b> of the theoretical ceiling from token-count-linear prefill scaling
+(H1) across every ratio tested &mdash; strong support for the CPU-linear-prefill
+hypothesis. TTFT_vlm never turns around within the tested range: no break-even where
+pruning overhead exceeds savings was observed (H2) down to keep=0.05. The vision
+encoder's <i>share</i> of total time triples (12% &rarr; 39%) as prefill shrinks,
+since all 576 patches still cross all 23 ViT layers regardless of keep ratio &mdash;
+pruning only shrinks the LLM side.
+</p>
+
+<div class="callout crit">
+<b>Qualitative degradation at the most aggressive ratio.</b> Generated text is
+byte-identical across keep &isin; {1.0, 0.75, 0.5, 0.25} ("two cats lying on a pink
+couch&hellip;"). At keep=0.1 the description already drifts (leads with "a couch",
+drops "sleeping peacefully"). At keep=0.05 (29 image tokens) the model
+<b>hallucinates</b> &mdash; "a couch with two remote controls" in place of the two
+cats. One image, temp=0, not a systematic eval &mdash; but a real, unprompted
+failure mode worth flagging rather than only reporting the speedup curve.
+</div>
+
+<h2>Full results table</h2>
+<div class="card" style="overflow-x:auto">
+<table id="results-table"></table>
+</div>
+
+<h2>TTFT breakdown vs keep ratio</h2>
+<div class="legend">
+  <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>TTFT_vlm (encoder + prefill)</div>
+  <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>TTFT_llm (prefill only)</div>
+</div>
+<div class="card"><svg id="chart-ttft" width="900" height="320"></svg></div>
+<div class="footnote">Both curves fall monotonically as keep decreases; the gap between them is encoder time, which barely moves (742.8ms &rarr; 660.4ms) while TTFT_llm drops from 5407ms to 1030ms.</div>
+
+<h2>Speedup vs theoretical ceiling (H1)</h2>
+<div class="legend">
+  <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Measured TTFT_llm speedup</div>
+  <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>Theoretical ceiling (linear in token count)</div>
+</div>
+<div class="card"><svg id="chart-speedup" width="900" height="320"></svg></div>
+<div class="footnote">Theoretical ceiling = TTFT_llm(keep=1.0) &times; (n_tokens(1.0) / n_tokens(r)), i.e. the speedup if prefill scaled perfectly linearly with token count. Measured tracks it closely throughout (88&ndash;100% realized) &mdash; the gap grows slowly as keep shrinks, consistent with a small fixed per-call overhead that matters more as the variable part shrinks.</div>
+
+<h2>Encoder share of TTFT_vlm</h2>
+<div class="card"><svg id="chart-encfrac" width="900" height="280"></svg></div>
+<div class="footnote">Rises from 12.1% to 39.1% &mdash; not because the encoder gets slower, but because prefill (the denominator's other term) shrinks so much faster. At aggressive keep ratios the encoder becomes the next bottleneck to attack.</div>
+
+<h2>Prune-overhead isolation: encode_ms = A + B&middot;K</h2>
+<div class="card"><svg id="chart-fit" width="900" height="320"></svg></div>
+<div class="footnote" id="fit-footnote"></div>
+
+<script>
+const DATA = {"tag_prefix": "p2_sweep", "table": [{"keep": 1.0, "K_image_tokens": 576, "n_prompt_tokens": 593, "encode_ms_mean": 742.8, "encode_ms_std": 31.68122472380132, "ttft_llm_ms_mean": 5407.444, "ttft_llm_ms_std": 89.07873781099534, "ttft_vlm_ms_mean": 6150.244, "ttft_vlm_ms_std": 113.23278469595309, "encoder_fraction_mean": 0.12074627309329869, "decode_tok_per_s_mean": 41.21135242486286, "max_rss_mib_mean": 10366.04375, "peak_footprint_mib_mean": 6659.192518615722, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.0, "speedup_ttft_vlm": 1.0, "theoretical_ttft_llm_ms": 5407.444, "fraction_of_theoretical_ceiling_h1": null}, {"keep": 0.75, "K_image_tokens": 432, "n_prompt_tokens": 449, "encode_ms_mean": 693.2, "encode_ms_std": 5.848076606885378, "ttft_llm_ms_mean": 4096.008, "ttft_llm_ms_std": 54.50279460724906, "ttft_vlm_ms_mean": 4789.208, "ttft_vlm_ms_std": 57.333721490933875, "encoder_fraction_mean": 0.14475253872703067, "decode_tok_per_s_mean": 44.01872684084528, "max_rss_mib_mean": 10354.046875, "peak_footprint_mib_mean": 6622.458065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.320174179347306, "speedup_ttft_vlm": 1.2841881162814395, "theoretical_ttft_llm_ms": 4094.3378684654303, "fraction_of_theoretical_ceiling_h1": 0.9987281062098022}, {"keep": 0.5, "K_image_tokens": 288, "n_prompt_tokens": 305, "encode_ms_mean": 678.8, "encode_ms_std": 1.9235384061671346, "ttft_llm_ms_mean": 2953.51, "ttft_llm_ms_std": 2.2717064070869575, "ttft_vlm_ms_mean": 3632.31, "ttft_vlm_ms_std": 4.080520800094003, "encoder_fraction_mean": 0.1868780511013374, "decode_tok_per_s_mean": 45.382894053316114, "max_rss_mib_mean": 10320.934375, "peak_footprint_mib_mean": 6589.717395019531, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.8308534591045909, "speedup_ttft_vlm": 1.693204599827658, "theoretical_ttft_llm_ms": 2781.2317369308603, "fraction_of_theoretical_ceiling_h1": 0.9344004803070237}, {"keep": 0.25, "K_image_tokens": 144, "n_prompt_tokens": 161, "encode_ms_mean": 670.0, "encode_ms_std": 3.082207001484488, "ttft_llm_ms_mean": 1883.532, "ttft_llm_ms_std": 4.130886103489194, "ttft_vlm_ms_mean": 2553.532, "ttft_vlm_ms_std": 7.199598599922077, "encoder_fraction_mean": 0.2623806291562026, "decode_tok_per_s_mean": 47.89868019489716, "max_rss_mib_mean": 10284.209375, "peak_footprint_mib_mean": 6552.739274597168, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 2.870906361028111, "speedup_ttft_vlm": 2.4085243498025477, "theoretical_ttft_llm_ms": 1468.1256053962902, "fraction_of_theoretical_ceiling_h1": 0.8945486622323405}, {"keep": 0.1, "K_image_tokens": 58, "n_prompt_tokens": 75, "encode_ms_mean": 661.4, "encode_ms_std": 1.140175425099138, "ttft_llm_ms_mean": 1247.336, "ttft_llm_ms_std": 0.9249486472231991, "ttft_vlm_ms_mean": 1908.736, "ttft_vlm_ms_std": 1.1245132280236028, "encoder_fraction_mean": 0.3465119459098205, "decode_tok_per_s_mean": 49.65151725863802, "max_rss_mib_mean": 10262.321875, "peak_footprint_mib_mean": 6531.445561218262, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two cats lying on it. One cat is positioned on the left side of the couch, while the other cat", "identical_output": true, "speedup_ttft_llm": 4.335194366233317, "speedup_ttft_vlm": 3.222155394983905, "theoretical_ttft_llm_ms": 683.9094435075885, "fraction_of_theoretical_ceiling_h1": 0.8807192898127543}, {"keep": 0.05, "K_image_tokens": 29, "n_prompt_tokens": 46, "encode_ms_mean": 660.4, "encode_ms_std": 2.6076809620810595, "ttft_llm_ms_mean": 1030.058, "ttft_llm_ms_std": 1.9380841055020832, "ttft_vlm_ms_mean": 1690.458, "ttft_vlm_ms_std": 4.4986853635256105, "encoder_fraction_mean": 0.3906623167983599, "decode_tok_per_s_mean": 50.02772350698429, "max_rss_mib_mean": 10256.9, "peak_footprint_mib_mean": 6525.508065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two remote controls placed on it. One remote control is located on the left side of the couch, while the other is", "identical_output": true, "speedup_ttft_llm": 5.249650019707628, "speedup_ttft_vlm": 3.638211656249371, "theoretical_ttft_llm_ms": 419.46445868465435, "fraction_of_theoretical_ceiling_h1": 0.8775869996543069}], "prune_overhead_fit": {"model": "encode_ms = A + B*K, fit over pruned cells only (keep<1.0)", "A_intercept_ms": 657.4359750344981, "B_slope_ms_per_token": 0.08056795460305888, "r_squared": 0.9917639267865284, "residuals_ms": [0.9586685769804717, -1.83954596017918, 0.9622395026614186, -0.7089164014755625, 0.6275542820130795], "residual_max_abs_ms": 1.83954596017918, "residual_std_ms": 1.1068212576326324, "points_K": [432.0, 288.0, 144.0, 58.0, 29.0], "points_encode_ms": [693.2, 678.8, 670.0, 661.4, 660.4], "fitted_encode_ms_at_K576": 703.84311688586, "measured_encode_ms_at_keep1": 742.8, "scoring_selection_overhead_ms": -38.95688311413994, "note": "overhead = fit(K=576) - measured(keep=1.0); these differ only by the presence of the scoring/top-K/gather ops, so the difference isolates their cost. A negative value would mean the fit doesn't extrapolate cleanly to the unpruned case -- report as-is either way."}, "bend_slopes_ttft_vlm_vs_keep": [{"between_keep": [1.0, 0.75], "d_ttft_vlm_ms_per_d_keep": 5444.144}, {"between_keep": [0.75, 0.5], "d_ttft_vlm_ms_per_d_keep": 4627.591999999999}, {"between_keep": [0.5, 0.25], "d_ttft_vlm_ms_per_d_keep": 4315.111999999999}, {"between_keep": [0.25, 0.1], "d_ttft_vlm_ms_per_d_keep": 4298.64}, {"between_keep": [0.1, 0.05], "d_ttft_vlm_ms_per_d_keep": 4365.56}]};
+
+function fmt(x, d=1) { return x === null || x === undefined ? '&mdash;' : Number(x).toFixed(d); }
+
+// ---------- table ----------
+(function renderTable() {
+  const cols = [
+    ['keep', 'Keep', v => v.toFixed(2)],
+    ['K_image_tokens', 'K', v => v],
+    ['encode_ms_mean', 'Encoder (ms)', (v,r) => `${fmt(v)}±${fmt(r.encode_ms_std)}`],
+    ['ttft_llm_ms_mean', 'TTFT_llm (ms)', (v,r) => `${fmt(v)}±${fmt(r.ttft_llm_ms_std)}`],
+    ['ttft_vlm_ms_mean', 'TTFT_vlm (ms)', (v,r) => `${fmt(v)}±${fmt(r.ttft_vlm_ms_std)}`],
+    ['encoder_fraction_mean', 'Enc %', v => fmt(v*100) + '%'],
+    ['speedup_ttft_llm', 'Speedup', v => fmt(v,2) + '×'],
+    ['fraction_of_theoretical_ceiling_h1', '% of ceiling', v => v==null ? '&mdash;' : fmt(v*100) + '%'],
+    ['decode_tok_per_s_mean', 'Decode tok/s', v => fmt(v,1)],
+    ['peak_footprint_mib_mean', 'Peak mem (MiB)', v => fmt(v,0)],
+    ['identical_output', 'Text', (v,r,i) => i===0 ? 'baseline' : (v ? 'matches det.' : 'n/a')],
+  ];
+  let html = '<tr>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
+  DATA.table.forEach((row, i) => {
+    html += '<tr>' + cols.map(c => `<td>${c[2](row[c[0]], row, i)}</td>`).join('') + '</tr>';
+  });
+  document.getElementById('results-table').innerHTML = html;
+})();
+
+// ---------- generic line chart ----------
+function lineChart(svgId, points, series, opts) {
+  const svg = document.getElementById(svgId);
+  const W = +svg.getAttribute('width'), H = +svg.getAttribute('height');
+  const M = {top: 16, right: 44, bottom: 34, left: 54};
+  const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
+  const xs = points.map(p => p.x);
+  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  let yMin = opts.yMin !== undefined ? opts.yMin : 0;
+  let yMax = opts.yMax !== undefined ? opts.yMax : Math.max(...series.flatMap(s => points.map(p => p[s.key]))) * 1.12;
+  const xPix = x => M.left + (xMax === xMin ? iw/2 : (x - xMin) / (xMax - xMin) * iw);
+  const yPix = y => M.top + ih - (y - yMin) / (yMax - yMin) * ih;
+
+  let svgContent = '';
+  // gridlines (y)
+  const yTicks = opts.yTicks || 5;
+  for (let i = 0; i <= yTicks; i++) {
+    const y = yMin + (yMax - yMin) * i / yTicks;
+    const yp = yPix(y);
+    svgContent += `<line class="gridline" x1="${M.left}" y1="${yp}" x2="${W-M.right}" y2="${yp}"/>`;
+    svgContent += `<text class="axis-text" x="${M.left-8}" y="${yp+3}" text-anchor="end">${opts.yFmt ? opts.yFmt(y) : y.toFixed(0)}</text>`;
+  }
+  // x ticks (one per data point, since keep ratios are irregular)
+  points.forEach(p => {
+    const xp = xPix(p.x);
+    svgContent += `<text class="axis-text" x="${xp}" y="${H-M.bottom+18}" text-anchor="middle">${opts.xFmt ? opts.xFmt(p.x) : p.x}</text>`;
+  });
+  svgContent += `<text class="axis-text" x="${W/2}" y="${H-4}" text-anchor="middle" font-size="11">${opts.xLabel||''}</text>`;
+
+  series.forEach(s => {
+    const path = points.map((p,i) => `${i===0?'M':'L'}${xPix(p.x).toFixed(1)},${yPix(p[s.key]).toFixed(1)}`).join(' ');
+    svgContent += `<path class="line" d="${path}" stroke="${s.color}"/>`;
+    points.forEach((p, i) => {
+      const xp = xPix(p.x), yp = yPix(p[s.key]);
+      svgContent += `<circle class="dot" cx="${xp}" cy="${yp}" r="4" fill="${s.color}"/>`;
+      svgContent += `<circle class="dot-hit" data-tip="${s.label}: ${opts.tipFmt ? opts.tipFmt(p[s.key]) : p[s.key]} (keep=${p.x})" cx="${xp}" cy="${yp}" r="10"/>`;
+    });
+    // direct label at the right end
+    const last = points[points.length-1];
+    svgContent += `<text class="direct-label" x="${xPix(last.x)+10}" y="${yPix(last[s.key])+4}" fill="${s.color}">${opts.endFmt ? opts.endFmt(last[s.key]) : last[s.key]}</text>`;
+  });
+
+  svg.innerHTML = svgContent;
+  attachTooltip(svg);
+}
+
+function attachTooltip(svg) {
+  let tip = document.getElementById('shared-tooltip');
+  if (!tip) {
+    tip = document.createElement('div');
+    tip.id = 'shared-tooltip';
+    tip.className = 'tooltip';
+    document.body.appendChild(tip);
+  }
+  svg.querySelectorAll('.dot-hit').forEach(el => {
+    el.addEventListener('mousemove', e => {
+      tip.textContent = el.getAttribute('data-tip');
+      tip.style.left = (e.pageX + 12) + 'px';
+      tip.style.top = (e.pageY - 28) + 'px';
+      tip.style.opacity = 1;
+    });
+    el.addEventListener('mouseleave', () => tip.style.opacity = 0);
+  });
+}
+
+// ---------- chart 1: TTFT breakdown ----------
+(function() {
+  const cs = getComputedStyle(document.querySelector('.viz-root'));
+  const c1 = cs.getPropertyValue('--series-1').trim(), c2 = cs.getPropertyValue('--series-2').trim();
+  const points = DATA.table.slice().reverse().map(r => ({
+    x: r.keep, ttft_vlm: r.ttft_vlm_ms_mean, ttft_llm: r.ttft_llm_ms_mean
+  }));
+  lineChart('chart-ttft', points,
+    [{key:'ttft_vlm', color:c1, label:'TTFT_vlm'}, {key:'ttft_llm', color:c2, label:'TTFT_llm'}],
+    {yMax: 6800, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>(y/1000).toFixed(1)+'s',
+     endFmt: v=>(v/1000).toFixed(2)+'s', tipFmt: v=>v.toFixed(0)+'ms'});
+})();
+
+// ---------- chart 2: speedup vs ceiling ----------
+(function() {
+  const cs = getComputedStyle(document.querySelector('.viz-root'));
+  const c1 = cs.getPropertyValue('--series-1').trim(), c2 = cs.getPropertyValue('--series-2').trim();
+  const base = DATA.table.find(r => r.keep === 1.0);
+  const points = DATA.table.slice().reverse().map(r => ({
+    x: r.keep,
+    measured: r.speedup_ttft_llm,
+    theoretical: base.ttft_llm_ms_mean / r.theoretical_ttft_llm_ms,
+  }));
+  lineChart('chart-speedup', points,
+    [{key:'measured', color:c1, label:'Measured'}, {key:'theoretical', color:c2, label:'Theoretical ceiling'}],
+    {yMax: 6, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>y.toFixed(1)+'×',
+     endFmt: v=>v.toFixed(2)+'×', tipFmt: v=>v.toFixed(3)+'×'});
+})();
+
+// ---------- chart 3: encoder fraction ----------
+(function() {
+  const cs = getComputedStyle(document.querySelector('.viz-root'));
+  const c1 = cs.getPropertyValue('--series-1').trim();
+  const points = DATA.table.slice().reverse().map(r => ({x: r.keep, frac: r.encoder_fraction_mean*100}));
+  lineChart('chart-encfrac', points,
+    [{key:'frac', color:c1, label:'Encoder %'}],
+    {yMax: 45, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>y.toFixed(0)+'%',
+     endFmt: v=>v.toFixed(1)+'%', tipFmt: v=>v.toFixed(2)+'%'});
+})();
+
+// ---------- chart 4: prune-overhead fit ----------
+(function() {
+  const cs = getComputedStyle(document.querySelector('.viz-root'));
+  const c1 = cs.getPropertyValue('--series-1').trim(), c3 = cs.getPropertyValue('--series-3').trim();
+  const fit = DATA.prune_overhead_fit;
+  const svg = document.getElementById('chart-fit');
+  const W = 900, H = 320, M = {top:16, right:110, bottom:34, left:54};
+  const iw = W-M.left-M.right, ih = H-M.top-M.bottom;
+  const allK = fit.points_K.concat([576]);
+  const xMin = 0, xMax = 620;
+  const yMin = 620, yMax = 780;
+  const xPix = x => M.left + (x-xMin)/(xMax-xMin)*iw;
+  const yPix = y => M.top + ih - (y-yMin)/(yMax-yMin)*ih;
+  let c = '';
+  for (let i=0;i<=4;i++) { const y = yMin+(yMax-yMin)*i/4; const yp=yPix(y);
+    c += `<line class="gridline" x1="${M.left}" y1="${yp}" x2="${W-M.right}" y2="${yp}"/>`;
+    c += `<text class="axis-text" x="${M.left-8}" y="${yp+3}" text-anchor="end">${y.toFixed(0)}ms</text>`; }
+  [0,100,200,300,400,500,576].forEach(x => {
+    const xp = xPix(x);
+    c += `<text class="axis-text" x="${xp}" y="${H-M.bottom+18}" text-anchor="middle">${x}</text>`;
+  });
+  c += `<text class="axis-text" x="${W/2-30}" y="${H-4}" text-anchor="middle" font-size="11">K (kept image tokens)</text>`;
+  // fit line across full range including extrapolation to 576
+  const fx0 = 0, fx1 = 576;
+  const fy0 = fit.A_intercept_ms + fit.B_slope_ms_per_token*fx0;
+  const fy1 = fit.A_intercept_ms + fit.B_slope_ms_per_token*fx1;
+  c += `<line class="fit-line" x1="${xPix(fx0)}" y1="${yPix(fy0)}" x2="${xPix(fx1)}" y2="${yPix(fy1)}"/>`;
+  // pruned-cell points (fitted range, solid)
+  fit.points_K.forEach((k,i) => {
+    const xp=xPix(k), yp=yPix(fit.points_encode_ms[i]);
+    c += `<circle class="dot" cx="${xp}" cy="${yp}" r="4" fill="${c1}"/>`;
+    c += `<circle class="dot-hit" data-tip="K=${k}: ${fit.points_encode_ms[i].toFixed(1)}ms measured" cx="${xp}" cy="${yp}" r="10"/>`;
+  });
+  // keep=1.0 measured point (orange, off the fit)
+  const xp1 = xPix(576), yp1 = yPix(fit.measured_encode_ms_at_keep1);
+  c += `<circle class="dot" cx="${xp1}" cy="${yp1}" r="5" fill="${c3}"/>`;
+  c += `<circle class="dot-hit" data-tip="keep=1.0 (measured, unpruned path): ${fit.measured_encode_ms_at_keep1.toFixed(1)}ms" cx="${xp1}" cy="${yp1}" r="11"/>`;
+  c += `<text class="direct-label" x="${xp1+10}" y="${yp1+4}" fill="${c3}">measured keep=1.0</text>`;
+  // extrapolated fit point at K=576
+  const xp2 = xPix(576), yp2 = yPix(fy1);
+  c += `<circle class="dot" cx="${xp2}" cy="${yp2}" r="5" fill="none" stroke="${c3}" stroke-width="2"/>`;
+  c += `<circle class="dot-hit" data-tip="fit extrapolated to K=576: ${fy1.toFixed(1)}ms" cx="${xp2}" cy="${yp2}" r="11"/>`;
+  c += `<text class="direct-label" x="${xp2+10}" y="${yp2-8}" fill="${c3}">fit&rarr;K=576</text>`;
+  svg.innerHTML = c;
+  attachTooltip(svg);
+
+  document.getElementById('fit-footnote').innerHTML =
+    `Fit over pruned cells only (keep&lt;1.0, K=29..432): A=${fit.A_intercept_ms.toFixed(1)}ms, ` +
+    `B=${fit.B_slope_ms_per_token.toFixed(4)}ms/token, R²=${fit.r_squared.toFixed(4)}, ` +
+    `max|residual|=${fit.residual_max_abs_ms.toFixed(2)}ms (tight fit, but extrapolated 144 tokens ` +
+    `beyond the fitted range to reach K=576). Scoring+selection overhead = fit(576) − measured(keep=1.0) ` +
+    `= ${fit.fitted_encode_ms_at_K576.toFixed(1)} − ${fit.measured_encode_ms_at_keep1.toFixed(1)} = ` +
+    `<b>${fit.scoring_selection_overhead_ms.toFixed(1)}ms</b> &mdash; ` +
+    `<b>not distinguishable from zero</b>: the keep=1.0 cell's own run-to-run std (±32ms, vs ±1–6ms ` +
+    `for every pruned cell) is comparable in magnitude to this estimate. Individual keep=1.0 runs drifted ` +
+    `730&rarr;709&rarr;722&rarr;775&rarr;778ms despite the 30s cooldown (load avg rose 2.0&rarr;3.7 over the cell) &mdash; ` +
+    `the most likely explanation is mild residual thermal noise on this specific cell (first in the sweep), ` +
+    `not a real negative-cost effect. Honest reading: the scoring/top-K/gather branch's added cost is small ` +
+    `enough to be lost in single-cell measurement noise at this precision, not precisely quantified as ` +
+    `${Math.abs(fit.scoring_selection_overhead_ms).toFixed(0)}ms in either direction.`;
+})();
+</script>
+</div>

@@ -593,3 +593,68 @@ debugging than row-matching + keep=1.0 cross-checks can provide.
 Full data: `results/20260718-025754_p2_gate2_kept_index_parity.json`,
 `results/20260718-043401_p2_gate2_epsilon_optimal.json`
 (+ raw dumps under `results/raw/20260718-025754_p2_gate2_kept_index_parity/`).
+
+## Keep-ratio sweep (2026-07-18)
+
+`scripts/sweep_prune.py` (resumable driver) x `scripts/bench_baseline.py`
+(now with `/usr/bin/time -l`-based peak RSS/footprint and KV-buffer-size
+capture). build-prune, LLaVA-1.5-7B, keep in {1.0, 0.75, 0.5, 0.25, 0.1,
+0.05}, n=5 + warmup, `--cooldown-s 30`, otherwise the frozen G2 config.
+All 6 cells clean on the first pass, tight variance throughout except the
+keep=1.0 cell (see below). Full table, curves, and methodology notes:
+`results/p2_sweep_report.html` (also published as an artifact this
+session). Raw per-cell JSONs: `results/*_p2_sweep_keep*.json`. Analysis:
+`scripts/sweep_analysis.py` -> `results/p2_sweep_analysis.json`.
+
+**Headline:** TTFT_llm speedup 1.0x -> 5.25x (keep=1.0 -> 0.05), realizing
+88-100% of the theoretical ceiling (H1: linear-in-token-count prefill
+scaling) at every ratio tested. TTFT_vlm falls monotonically throughout
+the tested range - no break-even where pruning overhead exceeds savings
+was observed (H2 candidate not located within {1.0..0.05}; if a
+break-even exists it's below keep=0.05, not reached here). Encoder share
+of TTFT_vlm triples, 12.1% -> 39.1%, because encoder time is nearly flat
+(742.8ms -> 660.4ms, all 576 patches cross all 23 ViT layers regardless
+of keep ratio - pruning only shrinks the post-encoder token count) while
+prefill collapses around it (5407ms -> 1030ms).
+
+**Qualitative degradation, unprompted finding:** generated text (temp=0,
+same image, same prompt) is byte-identical across keep in {1.0, 0.75,
+0.5, 0.25} ("two cats lying on a pink couch..."). At keep=0.1 it drifts
+(leads with "a couch", drops "sleeping peacefully" - same cats, softer
+phrasing). At keep=0.05 (29 image tokens) the model hallucinates: "a
+couch with two remote controls" in place of the two cats. Single image,
+not a systematic eval, but a real failure mode surfaced by the sweep
+itself, worth carrying into the eventual accuracy work rather than only
+reporting speedup.
+
+**Prune-overhead isolation** (methodology per this session's ruling: fit
+`encode_ms = A + B*K` over the pruned cells only, keep<1.0, since
+keep=1.0 runs a structurally different code path with the branch gated
+off entirely - extrapolate to K=576, subtract the *measured* keep=1.0
+encode_ms; the difference isolates the scoring/top-K/gather branch's
+cost since the two quantities differ only by its presence):
+
+- Fit (K=29..432, n=5): A=657.44ms, B=0.0806ms/token, R²=0.9918,
+  max|residual|=1.84ms - an excellent linear fit within its own range.
+- Fitted encode_ms at K=576: 703.84ms. Measured keep=1.0: 742.80ms.
+  Point-estimate overhead: **-38.96ms** (fit predicts *less* time than
+  what the genuinely-unpruned path measured).
+- **Not reported as a real negative-cost effect - it isn't distinguishable
+  from noise.** The keep=1.0 cell's own run-to-run std is 32ms, roughly
+  the same magnitude as the estimate itself, and is visibly higher than
+  every pruned cell's std (1-6ms): raw encode_ms across its 5 runs was
+  730/709/722/775/778ms, drifting upward within the cell despite the 30s
+  cooldown (load average rose 2.0->3.7 over the course of just this one
+  cell). Most likely explanation: mild residual thermal noise specific to
+  this cell (first in the sweep), not a genuine effect. Also worth
+  flagging: K=576 is 144 tokens beyond the fit's own max (432), so this
+  is an extrapolation, not an interpolation - a tight in-range fit doesn't
+  guarantee accuracy 33% past its domain.
+- **Honest reading:** the scoring+selection branch's added cost is small
+  enough to be lost in single-cell measurement noise at this precision -
+  not proven to be ~0ms, but bounded to a small fraction of encode_ms
+  (which itself is ~660-740ms) either way. A cleaner isolation would need
+  either a much larger n on the keep=1.0 cell specifically, or the
+  deferred ctypes raw-op-timing tool (Gate 2's future-work item) applied
+  to time the scoring branch's ops directly rather than inferring their
+  cost from a fit residual.
