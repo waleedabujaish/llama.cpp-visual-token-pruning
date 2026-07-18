@@ -898,3 +898,160 @@ not a second controlled quantitative data point for the same claim. A
 controlled x86 comparison (dedicated hardware, matched BLAS backend)
 remains a possible future addition if a precise cross-platform number is
 ever needed.
+
+## GPU platform sweep (Kaggle P100, 2026-07-18)
+
+The GPU half of H1 - the actual comparison the plan has been waiting on
+("CPU fraction-of-ceiling vs GPU's, where dispatch overhead should make
+pruning capture less of its theoretical benefit"). Run via
+`notebooks/kaggle_gpu_sweep.ipynb` on a Kaggle GPU P100 session, built
+with `-DGGML_CUDA=ON`. Real, executed run - not the notebook I originally
+handed off; the version that actually ran had three bugs fixed live by
+running it (see the notebook's own commit history and
+`notebooks/README.md`): the GPU-offload check was missing
+`--chat-template vicuna` (the GGUF has no embedded template),
+`sweep_prune.py`'s underlying `bench_baseline.py` was looking for the
+model at a relative `models/` path that didn't match where this notebook
+downloaded it (fixed via a symlink), and `--extra-arg -ngl` (space form)
+crashes argparse when the value itself starts with a dash - confirmed by
+reproducing it directly - fixed via `--extra-arg=-ngl`.
+
+### Platform and build
+
+- `platform_tag: kaggle-gpu-tesla-p100-pcie-16gb`. Tesla P100-PCIE-16GB,
+  16384 MiB, driver 580.159.04, CUDA toolkit 12.8. Host: Intel Xeon
+  (Kaggle CPU node), 4 cores.
+- Build required the `-DGGML_CUDA_NO_VMM=ON` fallback (see
+  `notebooks/kaggle_gpu_sweep.ipynb`'s section 6/6a for why: CMake's
+  `FindCUDAToolkit` couldn't resolve `CUDA::cuda_driver` on this
+  container image even after widening the driver-library search: this
+  flag sidesteps the dependency entirely by disabling CUDA VMM pooling
+  in ggml, verified against ggml's own CMakeLists.txt to be exactly what
+  gates that link requirement). Recorded transparently in every result
+  JSON's `environment.build` string, not silently mixed in.
+  `bin_commit`: `82f2ccb5c` (visual-token-pruning, matches the pinned
+  SHA).
+
+### Gate 0.5 (GPU determinism floor) and Gate 1: both PASS, bitwise
+
+Unlike the x86 CPU run, this platform's determinism wasn't assumed - the
+notebook checks it first (`results/raw/kaggle_gpu_gate_checks/`,
+`det_run1.npy`/`det_run2.npy`): **bitwise identical across 2 runs**
+(`np.array_equal` = True, max abs diff = 0.0). This P100/build combination
+turned out to be run-to-run bit-reproducible, so Gate 1 used the strict
+`np.array_equal` criterion (not the cosine fallback the notebook has
+ready for a GPU that isn't deterministic): pristine vs
+prune@`--visual-keep 1.0` - **bitwise identical, max abs diff = 0.0**.
+Both raw dumps in `results/raw/kaggle_gpu_gate_checks/`.
+
+### Latency sweep - the actual H1 GPU-vs-CPU comparison
+
+`n=5+warmup`, `--cooldown-s 5` (not CPU's 30s - see the notebook's
+config-cell reasoning), same 6 ratios, `-ngl 999`.
+
+| keep | K | encode_ms | ttft_llm_ms | speedup | frac_ceiling_h1 | decode_tok/s |
+|---|---|---|---|---|---|---|
+| 1.00 | 576 | 141.2 ± 5 | 1139.3 ± 5 | 1.00x | - | 42.89 |
+| 0.75 | 432 | 148.2 ± 6 | 952.0 ± 15 | 1.20x | 67.7% | 43.32 |
+| 0.50 | 288 | 146.0 ± 5 | 898.4 ± 5 | 1.27x | 43.5% | 43.32 |
+| 0.25 | 144 | 145.2 ± 4 | 704.2 ± 7 | 1.62x | 52.4% | 43.81 |
+| 0.10 | 58 | 144.8 ± 5 | 587.5 ± 7 | 1.94x | 55.4% | 43.80 |
+| 0.05 | 29 | 144.2 ± 4 | 576.4 ± 5 | 1.98x | 53.6% | 43.83 |
+
+`identical_output: true` on every cell. Full data:
+`results/*_p2_sweep_kaggle_gpu_keep*.json`,
+`results/p2_sweep_kaggle_gpu_analysis.json`.
+
+**H1, answered.** Fraction of theoretical ceiling on GPU is 43.5-67.7%,
+substantially below M4's 87.8-93.4% and x86's 77.8-81.7% at the same
+ratios. This is exactly the pre-registered H1 prediction
+(`vtp-cpu-plan-v2.md` §1: "dispatch overhead should make pruning capture
+less of its theoretical benefit" on GPU) - confirmed, not just plausible.
+Mechanism: absolute prefill time on this GPU is already very fast
+(1139ms unpruned vs CPU's several seconds), so fixed per-call overhead
+(kernel launch, memory allocation, the non-prunable parts of the
+pipeline) is a much larger fraction of total time and caps how much of
+the token-count reduction actually shows up as wall-clock speedup. The
+`frac_ceil_h1` curve is also non-monotonic (67.7% -> 43.5% -> 52.4% ->
+55.4% -> 53.6%) unlike CPU's smoother curves - std devs are tight
+(5-15ms) so this doesn't look like measurement noise, but the cause
+isn't investigated further here; flagged, not explained away.
+
+**Prune-overhead fit**: A=143.98ms, B=0.00896ms/token, R²=0.945,
+max|residual|=0.56ms - a tight fit. Fitted encode_ms at K=576: 149.14ms;
+measured keep=1.0: 141.2ms; scoring+selection overhead: **+7.94ms**.
+Unlike both CPU platforms (where the overhead estimate was negative and
+noise-dominated, magnitude smaller than the keep=1.0 cell's own std),
+this is **positive and likely a real, resolvable signal**: residual std
+here is 0.33ms, more than an order of magnitude smaller than the 7.94ms
+estimate itself. Reading: GPU's much smaller absolute encode_ms
+(~141-149ms vs CPU's ~660-740ms) makes the same fixed-cost scoring/top-K/
+gather branch a proportionally larger and more measurable fraction of
+total time here, rather than the branch itself costing more in absolute
+terms.
+
+**Decode speed**: 42.89 -> 43.83 tok/s (+2.2%) from keep=1.0 to
+keep=0.05, direction-consistent with both CPU platforms (M4: +21.4%,
+x86: +9.0%) but much smaller. Same mechanism read as the ceiling-fraction
+finding: GPU attention over the KV cache is already fast and parallel,
+so fewer image tokens occupying it matters much less than it did on
+CPU's more serially-bottlenecked decode path.
+
+### Accuracy sweep - full 200-sample curve, all 6 ratios, paired significance test
+
+`textvqa_keep_sweep.py` used **server mode successfully** (equivalence
+probe passed, 6 `llama-server` loads instead of ~1200 CLI invocations) -
+the first real confirmation this path works, not just the CPU-side
+design. Zero failures across all 1200 (200 samples x 6 ratios) scored
+predictions.
+
+| keep | acc_mean | n |
+|---|---|---|
+| 1.00 | 54.4% | 200 |
+| 0.75 | 54.4% | 200 |
+| 0.50 | 55.6% | 200 |
+| 0.25 | 54.4% | 200 |
+| 0.10 | 52.7% | 200 |
+| 0.05 | 51.7% | 200 |
+
+Raw means alone are close relative to the metric's per-sample std
+(~47-48%, expected for a near-binary soft-VQA score) - matching this
+project's established discipline for TextVQA comparisons, not reading
+raw means as significant on their own. Paired bootstrap (same 200
+samples, same methodology as `textvqa_llamacpp.py`'s fixed-vs-unfixed
+comparison, 10000 resamples, 95% CI), vs the keep=1.0 baseline:
+
+| keep | mean diff vs keep=1.0 | 95% CI | wins | losses | ties |
+|---|---|---|---|---|---|
+| 0.75 | +0.00pp | [-3.00, +3.00]pp | 4 | 4 | 192 |
+| 0.50 | +1.15pp | [-2.55, +4.85]pp | 9 | 6 | 185 |
+| 0.25 | -0.10pp | [-4.15, +3.85]pp | 10 | 12 | 178 |
+| 0.10 | -1.80pp | [-6.00, +2.35]pp | 9 | 16 | 175 |
+| 0.05 | -2.70pp | [-7.65, +2.20]pp | 12 | 19 | 169 |
+
+**None of the six ratios show a statistically significant accuracy
+difference from keep=1.0 at n=200** - every CI crosses zero, including
+the most aggressive ratio (keep=0.05). The loss/win split does lean
+toward degradation as keep decreases (4/4 tied at keep=0.75, drifting to
+12W/19L at keep=0.05), directionally consistent with pruning cost, but
+this is the same "directionally consistent, not statistically resolvable
+at n=200" pattern already seen twice elsewhere in this project (fixed-
+vs-unfixed: -1.40pp CI [-4.65,+1.70]; llama.cpp-vs-HF: -2.15pp CI
+[-7.0,+2.75]) - reported as such, not overclaimed. This is the first
+systematic (not single-image) accuracy-vs-keep-ratio measurement on the
+C++ path, closing the PENDING item `vtp-cpu-plan-v2.md` §3/§4 flagged
+after the M4 sweep's single-image hallucination finding raised its
+priority.
+
+**Qualitative degradation reproduces identically across all three
+platforms.** Same single-image test (COCO cats) used for the latency
+sweep: byte-identical generated text to M4/x86 at every ratio, including
+the same hallucination at keep=0.05 - "The image features a couch with
+two remote controls placed on it" in place of the two cats, on GPU too.
+This is a real cross-platform consistency finding, not just a repeated
+observation: the qualitative failure mode is a property of the pruning
+method/ratio itself, not a numerical artifact specific to any one
+backend's kernels.
+
+Full data: `results/*_p3_textvqa_kaggle_gpu_keep*_summary.json`,
+`results/raw/p3_textvqa_kaggle_gpu_keep*.preds.jsonl`.
