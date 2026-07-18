@@ -706,34 +706,38 @@ matching the formula precisely). Full analysis:
 dual-fit comparison), `results/p2_sweep_analysis.json`,
 `results/p2_sweep_report.html` (republished at the same artifact URL).
 
-**H2 answer: yes, TTFT_vlm turns around.** Mean TTFT_vlm minimum is at
-keep=0.05 (1690.5ms); every tested ratio below that is higher:
-keep=0.03 -> 2566.0ms (+52%), keep=0.02 -> 2024.3ms (+20%),
-keep=0.015 -> 2393.2ms (+42%), keep=0.01 -> 2068.2ms (+22%). Not a smooth
-curve - 0.03 is higher than 0.02 despite fewer tokens - but every one of
-the 4 new cells sits above the keep=0.05 floor, which is the signal that
-matters for H2 (does overhead ever exceed savings), not the exact shape
-below it.
+**H2 status: TTFT_vlm's mean stops decreasing and gets substantially
+noisier below keep~0.05 - what causes that is not resolved.** Mean TTFT_vlm
+minimum is at keep=0.05 (1690.5ms); every tested ratio below that is
+higher: keep=0.03 -> 2566.0ms (+52%), keep=0.02 -> 2024.3ms (+20%),
+keep=0.015 -> 2393.2ms (+42%), keep=0.01 -> 2068.2ms (+22%).
 
-**Real effect, not thermal noise - but noisy in a different way than
-anything seen before.** `load_avg_1_5_15_at_start/end` stayed flat
-(~1.9-2.4) across all 4 new cells - no drift signature like the earlier
-keep=1.0 cell. Instead, run-to-run variance exploded at this token scale:
-encode_ms std jumps from ±1-6ms (every cell down to keep=0.05) to
-±65-117ms; prompt_eval std to ±261-503ms. Individual runs within a single
-cell swing wildly - keep=0.03's 5 runs: encode 957/765/914/985/726ms,
-prompt_eval 1999/1757/1929/1703/1094ms - with no monotonic pattern (ruling
-out drift) and stable load average throughout (ruling out background
-contention). Most likely explanation: at these absolute time scales
-(encode ~700-900ms, prefill ~1-2s total), OS-level scheduling/dispatch
-jitter that's negligible against a 5000ms+ prefill becomes a large
-fraction of a ~2000ms total. Consequence: the best individual runs at
-keep=0.02 (1630ms) and keep=0.01 (1576ms) actually undercut keep=0.05's
-mean (1690.5ms) - meaning the *achievable* floor at extreme K might be
-comparable to or below keep=0.05's, even though the *mean* clearly isn't.
-Did not run additional repeats to resolve this ambiguity further (matches
-the requested protocol, n=5); flagging it as a limit of what n=5 resolves
-at this noise level rather than overstating precision.
+**Established:** thermal/background-load confounds are ruled out -
+`load_avg_1_5_15_at_start/end` stayed flat (~1.9-2.4) across all 4 new
+cells, no drift signature like the earlier keep=1.0 cell. Run-to-run
+variance genuinely explodes at this token scale: encode_ms std jumps from
+±1-6ms (every cell down to keep=0.05) to ±65-117ms; prompt_eval std to
+±261-503ms.
+
+**Not established:** that the mean's rise reflects H2's actual mechanism
+- pruning-branch overhead (scoring/top-K/gather) genuinely exceeding the
+savings from fewer tokens - as opposed to OS-level measurement noise
+simply becoming the dominant contributor once total runtime drops under
+roughly 2s, inflating the *mean* via occasional slow outlier runs while
+the *true* achievable time may still be flat or declining. Two pieces of
+evidence favor the noise-dominance explanation over a clean algorithmic
+floor: the curve is non-monotonic below keep=0.05 (keep=0.03 is higher
+than keep=0.015 and keep=0.01 despite having *more* tokens, not fewer -
+not what a smooth compute-overhead mechanism would produce), and the best
+individual runs at keep=0.02 (1630ms) and keep=0.01 (1576ms) actually
+undercut keep=0.05's mean (1690.5ms) entirely. A genuine algorithmic
+break-even should show a comparatively tight, monotonic rise past the
+turning point, the way the K>=29 decline itself was tight (±1-6ms); what's
+observed instead - wide, non-monotonic, with the "good" tail overlapping
+the pre-turnaround floor - is the signature of a noise-dominated regime,
+not a resolved one. Did not run additional repeats to settle this (matches
+the requested protocol, n=5); recording it as an open question rather than
+picking the more dramatic reading.
 
 **Prune-overhead fit collapses when extended - reported, not hidden.**
 Refit `encode_ms = A + B*K` two ways: the original range (K=29-432,
@@ -762,10 +766,15 @@ two photographs... a black and white image of a man standing in a
 field", content with no relation to the input image at all. Single
 image, not a systematic eval, but a clear escalating pattern, not noise.
 
-**Framing, explicit per the request:** the break-even this section
-answers H2 with sits at keep~0.03-0.05, a range where keep=0.05 itself
-already showed real output degradation before the extension even started.
-This closes H2 as a compute question - pruning overhead does eventually
-exceed savings on CPU - without implying keep=0.01-0.03 is a usable
-operating point. It isn't; the model's outputs are already unreliable
-well above that range.
+**Framing, explicit per the request:** H2's precondition - is there a
+point where TTFT_vlm stops improving - is measured: yes, around
+keep~0.05. H2's actual claim - that this happens *because* pruning
+overhead exceeds savings - is not established; it's equally consistent
+with measurement noise dominating once runs drop under ~2s, and the
+non-monotonic pattern below the floor leans toward that reading, not
+away from it. The practical conclusion holds regardless of which
+explanation is correct: no ratio below keep~0.05 is worth using, both
+because further gains are unproven (real or measurement artifact, either
+way nothing usable is demonstrated below there) and because outputs are
+already unreliable at keep=0.05 itself, before the ambiguous region even
+starts.
