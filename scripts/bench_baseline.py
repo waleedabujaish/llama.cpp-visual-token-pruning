@@ -145,6 +145,9 @@ def main():
                     help="sleep this many seconds between runs (incl. after warmup); "
                          "mitigates the sustained -t N thermal drift observed within "
                          "back-to-back 6-run blocks (see NOTES.md)")
+    ap.add_argument("--extra-arg", action="append", default=[],
+                    help="additional llama-mtmd-cli flag, repeatable, e.g. "
+                         "--extra-arg=--visual-keep --extra-arg=0.5")
     args = ap.parse_args()
 
     ts = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
@@ -168,7 +171,7 @@ def main():
         "--perf",
         "--chat-template", "vicuna",
         "-v",  # timing lines (image decode, llama_perf) only print at full verbosity
-    ]
+    ] + args.extra_arg
 
     print(f"[bench] command: {' '.join(cmd)}", flush=True)
     print(f"[bench] hashing model files ...", flush=True)
@@ -226,6 +229,7 @@ def main():
             "temp": 0.0, "seed": args.seed,
             "warmup_discarded": args.warmup, "timed_runs": args.runs,
             "cooldown_s_between_runs": args.cooldown_s,
+            "extra_args": args.extra_arg,
         },
         "environment": {
             "llama_cpp_build": resolve_build_provenance(args.bin, args.llama_repo),

@@ -81,6 +81,36 @@ class mtmd_context_params(C.Structure):
     ]
 
 
+class mtmd_context_params_pruned(C.Structure):
+    # tools/mtmd/mtmd.h struct mtmd_context_params, visual-token-pruning branch
+    # (commit 82f2ccb5c): adds visual_keep/visual_prune_method between
+    # image_max_tokens and cb_eval. A dylib built from this branch returns a
+    # LARGER struct from mtmd_context_params_default() than the layout above;
+    # using the pre-pruning layout against it would silently misalign every
+    # field from cb_eval onward (this is exactly the failure mode
+    # llama_provenance.py was built to catch on the binary-versioning side —
+    # here it's a struct-layout analog of the same "the tree moved on"
+    # problem). Use --pruned-abi to select this layout.
+    _fields_ = [
+        ("use_gpu", C.c_bool),
+        ("print_timings", C.c_bool),
+        ("n_threads", C.c_int),
+        ("image_marker", C.c_char_p),
+        ("media_marker", C.c_char_p),
+        ("flash_attn_type", C.c_int),
+        ("warmup", C.c_bool),
+        ("image_min_tokens", C.c_int),
+        ("image_max_tokens", C.c_int),
+        ("visual_keep", C.c_float),
+        ("visual_prune_method", C.c_char_p),
+        ("cb_eval", C.c_void_p),
+        ("cb_eval_user_data", C.c_void_p),
+        ("batch_max_tokens", C.c_int32),
+        ("progress_callback", C.c_void_p),
+        ("progress_callback_user_data", C.c_void_p),
+    ]
+
+
 class mtmd_input_text(C.Structure):
     # tools/mtmd/mtmd.h struct mtmd_input_text
     _fields_ = [
@@ -91,7 +121,7 @@ class mtmd_input_text(C.Structure):
     ]
 
 
-def load_libs(lib_dir=None):
+def load_libs(lib_dir=None, ctx_params_type=mtmd_context_params):
     d = Path(lib_dir) if lib_dir else BIN_DIR
     ggml = C.CDLL(str(d / "libggml.dylib"), mode=C.RTLD_GLOBAL)
     llama = C.CDLL(str(d / "libllama.dylib"), mode=C.RTLD_GLOBAL)
@@ -107,9 +137,9 @@ def load_libs(lib_dir=None):
     llama.llama_model_n_embd_inp.argtypes = [C.c_void_p]
 
     mtmd.mtmd_default_marker.restype = C.c_char_p
-    mtmd.mtmd_context_params_default.restype = mtmd_context_params
+    mtmd.mtmd_context_params_default.restype = ctx_params_type
     mtmd.mtmd_init_from_file.restype = C.c_void_p
-    mtmd.mtmd_init_from_file.argtypes = [C.c_char_p, C.c_void_p, mtmd_context_params]
+    mtmd.mtmd_init_from_file.argtypes = [C.c_char_p, C.c_void_p, ctx_params_type]
     mtmd.mtmd_bitmap_init.restype = C.c_void_p
     mtmd.mtmd_bitmap_init.argtypes = [C.c_uint32, C.c_uint32, C.c_char_p]
     mtmd.mtmd_input_chunks_init.restype = C.c_void_p
@@ -148,14 +178,24 @@ def main():
                     help="allow non-336x336 input (multi-tile models like llava-1.6; "
                          "llama.cpp then does its own resize/tiling, so pixel parity with an "
                          "external reference is no longer bit-exact)")
+    ap.add_argument("--pruned-abi", action="store_true",
+                    help="use the mtmd_context_params layout from the visual-token-pruning "
+                         "branch (visual_keep/visual_prune_method fields present) -- required "
+                         "for any --lib-dir built from that branch, e.g. build-prune")
+    ap.add_argument("--visual-keep", type=float, default=1.0,
+                    help="only meaningful with --pruned-abi")
+    ap.add_argument("--visual-prune-method", default="none",
+                    help="only meaningful with --pruned-abi (default: none)")
     args = ap.parse_args()
+
+    ctx_params_type = mtmd_context_params_pruned if args.pruned_abi else mtmd_context_params
 
     img = Image.open(args.image).convert("RGB")
     if img.size != (336, 336) and not args.any_size:
         raise SystemExit(f"image must be 336x336 (got {img.size}); pre-resize it once and save as PNG")
     rgb = np.asarray(img, dtype=np.uint8)  # (H, W, 3), row-major RGB — matches mtmd_bitmap layout
 
-    ggml, llama, mtmd = load_libs(args.lib_dir)
+    ggml, llama, mtmd = load_libs(args.lib_dir, ctx_params_type)
     ggml.ggml_backend_load_all()
     llama.llama_backend_init()
 
@@ -168,7 +208,11 @@ def main():
     assert mp.flash_attn_type == -1, f"layout mismatch (flash_attn_type={mp.flash_attn_type})"
     assert mp.image_min_tokens == -1 and mp.image_max_tokens == -1, "layout mismatch (min/max tokens)"
     assert mp.batch_max_tokens == 1024, f"layout mismatch (batch_max_tokens={mp.batch_max_tokens})"
-    print(f"[dump] mtmd_context_params layout OK (marker={marker.decode()})")
+    if args.pruned_abi:
+        assert mp.visual_keep == 1.0, f"layout mismatch (visual_keep default={mp.visual_keep}, expected 1.0)"
+        assert mp.visual_prune_method == b"none", \
+            f"layout mismatch (visual_prune_method default={mp.visual_prune_method!r}, expected b'none')"
+    print(f"[dump] mtmd_context_params layout OK (marker={marker.decode()}, pruned_abi={args.pruned_abi})")
 
     lp = llama.llama_model_default_params()
     assert lp.use_mmap is True and lp.use_mlock is False and lp.check_tensors is False, \
@@ -188,6 +232,13 @@ def main():
 
     mp.n_threads = 8
     mp.flash_attn_type = FA[args.fa]
+    visual_prune_method_bytes = None  # keep alive: mp.visual_prune_method is a raw c_char_p
+    if args.pruned_abi:
+        mp.visual_keep = args.visual_keep
+        visual_prune_method_bytes = args.visual_prune_method.encode()
+        mp.visual_prune_method = visual_prune_method_bytes
+        print(f"[dump] pruning params: visual_keep={mp.visual_keep} "
+              f"visual_prune_method={mp.visual_prune_method}")
     ctx = mtmd.mtmd_init_from_file(args.mmproj.encode(), model, mp)
     assert ctx, "mtmd_init_from_file failed"
 
@@ -231,6 +282,10 @@ def main():
         "token0_first16": [round(float(x), 6) for x in emb[0, :16]],
         "token0_last16": [round(float(x), 6) for x in emb[0, -16:]],
         "fa": args.fa,
+        "lib_dir": str(Path(args.lib_dir).resolve()) if args.lib_dir else str(BIN_DIR.resolve()),
+        "pruned_abi": args.pruned_abi,
+        "visual_keep": args.visual_keep if args.pruned_abi else None,
+        "visual_prune_method": args.visual_prune_method if args.pruned_abi else None,
     }
     print("[dump] stats:", json.dumps(stats))
     (out.with_suffix(".stats.json")).write_text(json.dumps(stats, indent=2))

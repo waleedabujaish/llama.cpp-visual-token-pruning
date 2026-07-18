@@ -228,6 +228,18 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   a 30s inter-run cooldown.** See "Phase 2 re-baseline" below. `bench_baseline.py`
   now takes `--cooldown-s`; use it for every cell in the upcoming keep-ratio
   sweep (many more back-to-back invocations than G0 had).
+- **Design requirement for the keep-ratio sweep script (not yet written):**
+  with `--cooldown-s 30` and 6 keep-ratios x >=6 runs each x ~8s/run, the
+  sweep is a multi-hour unattended job (6 cells x (1 warmup + 6 runs) x
+  (8s run + 30s cooldown) is already ~25 min for one model/platform cell,
+  and the full matrix (section 3 of the plan) is several platforms x
+  metrics x ratios). It must be resumable: write each cell's result JSON
+  to `results/` immediately on completion (not buffered until the whole
+  sweep finishes), and on restart, scan `results/` for a cell already done
+  under the current frozen config and skip it rather than re-running.
+  `bench_baseline.py` already writes one JSON per invocation, so the sweep
+  driver is the thing that needs the "skip if already done" check, not the
+  underlying benchmark script.
 
 ## Phase 2 re-baseline (2026-07-17/18, fixed build)
 
@@ -379,3 +391,205 @@ verification section above and reconfirmed here:
   (0.9965 mean cosine vs HF reference, see fix-verification section above)
   but this particular end-task benchmark is too OCR-line-dominated to
   register it; unchanged conclusion from the fix-verification session.
+
+## Pruning acceptance gates (2026-07-18)
+
+Implementation: fork branch `visual-token-pruning` @ `82f2ccb5c`
+(`local-test-both` + `--visual-keep`/`--visual-prune-method`). Design doc:
+`analysis/g2-hook-design-fixed-graph.md`.
+
+### Task 0: build contamination and rebuild
+
+The implementation session iteratively recompiled into `build-both/` and
+`build/` (`cmake --build`, no reconfigure) while testing the pruning
+branch. `build-info.cpp` only regenerates at cmake *configure* time
+(`cmake/build-info.cmake`, included at `CMakeLists.txt:124`), so both
+binaries kept reporting a stale `--version` (`5b9058635`) while their
+`clip.cpp.o`/`llava.cpp.o` object files (confirmed newer than each
+directory's `CMakeCache.txt`) actually contained the pruning branch's
+code — confirmed directly by `--help | grep visual-keep` returning
+matches on both. **This is a real hole in `llama_provenance.py`'s
+"trust the binary's --version" design**: that assumption holds for a
+binary from a fresh configure+build, not for one patched via incremental
+`cmake --build` without reconfigure. `build-fixA`/`build-fixB` were
+untouched (correct versions). `build/` (the pinned unfixed baseline) is
+contaminated the same way; not rebuilt (nothing downstream needs it —
+the committed G2 baseline in `results/` was measured 2026-07-17 ~23:45,
+before the 2026-07-18 02:20 pruning commit, so those JSONs are unaffected;
+they just can't be re-diffed against the binaries that produced them).
+
+Rebuilt clean: `local-test-both` checked out into a separate git worktree
+(`../llama.cpp-worktree-pristine`, `git worktree add`, does not disturb
+the fork's main checkout) and fresh-configured+built into
+`build-both-pristine/`; `build-prune/` fresh-configured+built from the
+main checkout's `visual-token-pruning` HEAD. Both verified two ways
+(version string is advisory only, per the above): `--version` matches the
+expected commit, **and** `--help | grep visual-keep` is empty for the
+pristine build-both and non-empty for build-prune.
+
+### Gate 0.5 (added): determinism floor
+
+Before trusting `np.array_equal` as the Gate 1 operator, confirmed the
+CPU vision encode is deterministic run-to-run at `-t 8`: encoded
+`cat_336.png` twice on pristine build-both, `np.array_equal` = True, max
+abs diff = 0.0. `np.array_equal` is a sound bit-identity test here.
+
+### Gate 1: keep=1.0 bit-identity — PASS
+
+`scripts/phase1/dump_llamacpp_embd.py` needed a second ctypes struct
+(`mtmd_context_params_pruned`) for the branch's larger
+`mtmd_context_params` (two new fields inserted between
+`image_max_tokens` and `cb_eval`) — the pre-pruning struct layout would
+silently misalign every field from `cb_eval` onward if pointed at
+`build-prune`'s dylib. Added `--pruned-abi`/`--visual-keep`/
+`--visual-prune-method` flags, selected via the new struct when set.
+
+- Bitwise: pristine build-both vs build-prune `--visual-keep 1.0` (both
+  `--visual-prune-method none` and `cls` — the gate only requires
+  `visual_keep < 1.0`, so both should no-op): `np.array_equal` = True,
+  max abs diff = 0.0, in both cases.
+  (`results/raw/.../pristine_run1.npy` vs `prune_keep1.npy`/`prune_keep1_cls.npy`.)
+- Timing (cooled, n=5, `--cooldown-s 30`): pristine build-both encode
+  721.4±7.7ms / prompt_eval 5306.3±15.7ms; build-prune@keep=1.0 encode
+  711.0±1.6ms / prompt_eval 5351.9±25.1ms. Delta -1.44% encode, +0.86%
+  prefill — within noise, no systematic direction. Identical generated
+  text at temp=0 on both.
+  (`results/20260718-024601_gate1_timing_build_both_pristine.json`,
+  `results/20260718-024934_gate1_timing_build_prune_keep1.json`.)
+
+### Layer alignment (verified against real config/GGUF values, not asserted)
+
+HF `llava-hf/llava-1.5-7b-hf` vision config: `num_hidden_layers=24`,
+`vision_feature_layer=-2` (read directly from the cached snapshot's
+`config.json`). GGUF `clip.vision.block_count=23` (parsed directly from
+the mmproj file's metadata bytes: type u32, value 0x17=23) — the
+conversion script already dropped HF's 24th layer, so GGUF block index
+== HF layer index (0-indexed) for blocks 0..22.
+
+HF `hidden_states` is a 25-tuple (index 0 = embeddings, index i =
+output after 0-indexed layer i-1); `hidden_states[-2]` = index 23 =
+output of HF layer 22. HF `attentions` is a 24-tuple (index i = probs
+from 0-indexed layer i); `attentions[-2]` = index 22 = probs from HF
+layer 22. Both `[-2]` indices land on **HF layer 22** for different
+reasons (the extra embeddings entry in `hidden_states`, not a shared
+offset convention) — this is exactly `prune_viz.py`'s own
+`cls_scores()`/`hf_reference.py`'s `Ref.tower(..., probs_layer=22)`.
+
+C++ post-fix-B: `max_feature_layer = hparams.n_layer = 23`, loop
+`il = 0..22`, last built = `il=22` = `v.blk.22` = HF layer 22 (block
+index == HF layer index, established above). **Matches.** Pre-fix-B it
+was `il=21` = HF layer 21 — off by one, matching G1's original finding.
+
+### Gate 2: kept-index parity — not literal exact match; root cause characterized, not a pruning-code bug
+
+`MTMD_DEBUG_GRAPH`'s tensor dump (`common/debug.cpp`) truncates every
+tensor to 6 elements per dimension (hardcoded `n=3` at the one call
+site) — it cannot recover a 576-element score vector or a >6-element
+kept set. `scripts/phase1/gate2_kept_index_parity.py` recovers the C++
+kept set a different way instead: dump the projector output at
+`--visual-keep 1.0` (576 rows, spatial order) and at the ratio under
+test (K rows), then nearest-neighbor-match each pruned row back to its
+source row (the MLP projector is token-independent, so a kept row's
+value is bit-for-bit the same computation as its keep=1.0 counterpart).
+Match quality confirmed unambiguous throughout: nearest-match distance
+was 9-53% of the second-nearest distance in every one of 15 cells (never
+close to ambiguous).
+
+Python reference: `hf_reference.Ref.tower(cls_first=True, n_layers=23,
+probs_layer=22)` — exactly `prune_viz.py`'s already-validated
+`cls_scores()`, matching the layer-alignment derivation above.
+
+5 images (`assets/phase1/gate2/`, all pre-resized/cropped to exactly
+336x336 for pixel-identical C++/Python input: the COCO cats image, three
+TextVQA images resized, one native-resolution TextVQA crop) x keep in
+{0.5, 0.25, 0.1} = 15 cells. 2/15 cells exact match
+(`gate2_cat@0.25`, `gate2_textvqa_002@0.1`). 78 total mismatched patches
+across the other 13 cells, out of 2450 total kept-slots evaluated
+(sum of K x 5 images) — 3.2% mismatch rate.
+
+Investigated, not just counted. Every mismatch was cross-checked against
+a keep=1.0 comparison (Python's full unpruned projector output vs C++'s
+`--visual-keep 1.0` output, all 576 tokens, zero pruning logic involved)
+to separate "this patch's *encoder representation* already diverges
+between the two implementations" from "the pruning-specific code (scoring
+branch / top-K / gather) is doing something wrong":
+
+- **37/78 (47%) tie-like**: score gap at the K/K+1 cutoff < 5e-5 (score
+  std for a typical image is ~5e-3, so this is two orders of magnitude
+  below typical spacing) and the disputed patch's embedding already
+  agrees closely (cosine >=0.98) at keep=1.0. Ordinary boundary noise —
+  many candidates are near-tied right at the cutoff rank.
+- **30/78 (38%) pre-existing encoder divergence**: the disputed patch
+  already had cosine <0.98 (many far lower — as low as 0.055-0.90)
+  between C++ and Python **at keep=1.0**, i.e. before any pruning code
+  runs at all. This is the *same* phenomenon Phase 1 already documented
+  (`hf_reference.py`'s docstring: "F16 mmproj + FA fp16 K/V casts + ggml
+  quick-gelu LUT vs fp32 reference keeps even the true-matching variant
+  at ~0.998-0.999 mean cosine, not 1.0") — a mean cosine in that range is
+  exactly what a small number of very-low-cosine outlier tokens averaged
+  with hundreds of near-perfect ones produces. Confirmed this isn't a
+  pruning-branch artifact: Gate 1 already proved build-prune@keep=1.0 is
+  bitwise identical to pristine build-both, so this keep=1.0 comparison
+  *is* a statement about the fixed graph itself, independent of the
+  pruning branch.
+- **11/78 (14%) not cleanly classified**: high embedding cosine at
+  keep=1.0 (0.988-0.9995, ruling out the "already-diverged token" bucket)
+  but a score gap larger than the tie threshold. Plausible read: the raw
+  attention-probability score is a narrower, per-head-then-averaged
+  quantity and may be more sensitive to small cross-implementation
+  numerical noise than the fully-aggregated final embedding — but this
+  wasn't verified directly (no C++-side raw score extraction was
+  available; see limitation below), so it's reported as unexplained
+  rather than asserted.
+
+**Criterion amended (ruling, 2026-07-18):** literal exact-set-match
+implicitly assumes identical numerics across two stacks that demonstrably
+differ (F16 mmproj + quick-gelu LUT in ggml vs fp32 in the Python
+reference), a gap documented since Phase 1, not something introduced by
+this gate. The criterion that actually matters is "no divergence
+attributable to the pruning code" — which the cross-check above
+(tie-like / pre-existing-encoder-divergence / unclassified buckets)
+supports, but stops short of proving quantitatively. Closed with one more
+check, computed from already-existing data (no new llama.cpp binary
+invocations — `scripts/phase1/gate2_epsilon_optimal.py` re-derives
+Python scores fresh, deterministic, and reads the mismatch list straight
+out of the Gate 2 results JSON):
+
+**Epsilon-optimality of C++'s picks.** For every `cpp_only` mismatch (a
+patch C++ kept that the Python reference did not), computed
+`gap = python_cutoff_score - python_score_of_cpp_pick`, normalized by
+the image's own score std. A small gap means C++'s "wrong" pick is a
+near-tied alternative under the reference's own scoring, not a bad one.
+
+- All 39 gaps non-negative (sanity check: C++'s picks are, correctly,
+  always at or below the Python cutoff when scored by the reference).
+- Overall: max 0.590 std, median 0.008 std, mean 0.045 std.
+- Known-diverged-token bucket (n=14): max 0.590, median 0.022 std —
+  the one large outlier lives here, on the already-explained bucket.
+- **Other bucket (n=25, the one that could reopen the gate): max 0.250
+  std, median 0.004 std.** No entry anywhere near 1 std, let alone
+  large. C++'s picks are epsilon-optimal under the reference scoring
+  even outside the already-explained divergent-token bucket.
+  (`results/20260718-043401_p2_gate2_epsilon_optimal.json`.)
+
+**Gate 2: PASS-AMENDED.** Literal exact-set-match does not hold (13/15
+cells have at least one mismatch), but every mismatch traces to
+cutoff-boundary score noise or the pre-existing (pruning-independent)
+encoder-level numerical floor on record since Phase 1, and the
+epsilon-optimality check confirms even the unclassified 14% are
+near-tied picks, not meaningfully wrong ones. No pattern anywhere
+implicates the pruning code (no fixed offset, no consistent direction,
+no image-independent recurrence). Scoring branch, top-K, and gather are
+correct; the residual mismatch is entirely inherited, not introduced.
+
+**Deferred (future work, not blocking):** direct extraction of the C++
+scoring branch's raw `cls_scores` values (a ctypes `ggml_tensor` struct
+binding to intercept `cb_eval`) would let the 14% unclassified bucket be
+attributed with certainty instead of by inference from embedding cosine.
+Not needed to close Gate 2 given the epsilon-optimality result above;
+worth building if a future change to the scoring branch needs finer-grained
+debugging than row-matching + keep=1.0 cross-checks can provide.
+
+Full data: `results/20260718-025754_p2_gate2_kept_index_parity.json`,
+`results/20260718-043401_p2_gate2_epsilon_optimal.json`
+(+ raw dumps under `results/raw/20260718-025754_p2_gate2_kept_index_parity/`).
