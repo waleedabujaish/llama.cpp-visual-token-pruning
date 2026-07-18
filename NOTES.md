@@ -691,3 +691,81 @@ directly from the committed JSON before writing this):
   discrepancy.) This prediction appeared in the original project plan
   (pre-v2 rewrite) and was dropped during a later plan revision; recorded
   here for full provenance.
+
+## Sweep extension for H2 (2026-07-18)
+
+Extended the same sweep (same driver, same image/prompt, same frozen
+config, n=5+warmup, `--cooldown-s 30`) to keep in {0.03, 0.02, 0.015,
+0.01} (K = max(1, round(576*keep)) = 17/12/9/6 image tokens) to chase
+down the H2 break-even the original {1.0..0.05} range didn't locate.
+`scripts/sweep_prune.py`'s resumability worked as designed: all 6 prior
+cells correctly skipped, only the 4 new ones ran. K values confirmed
+exactly via `n_prompt_tokens` (34/29/26/23 = K+17 text tokens each,
+matching the formula precisely). Full analysis:
+`scripts/sweep_analysis.py` (extended with per-cell min/max and a
+dual-fit comparison), `results/p2_sweep_analysis.json`,
+`results/p2_sweep_report.html` (republished at the same artifact URL).
+
+**H2 answer: yes, TTFT_vlm turns around.** Mean TTFT_vlm minimum is at
+keep=0.05 (1690.5ms); every tested ratio below that is higher:
+keep=0.03 -> 2566.0ms (+52%), keep=0.02 -> 2024.3ms (+20%),
+keep=0.015 -> 2393.2ms (+42%), keep=0.01 -> 2068.2ms (+22%). Not a smooth
+curve - 0.03 is higher than 0.02 despite fewer tokens - but every one of
+the 4 new cells sits above the keep=0.05 floor, which is the signal that
+matters for H2 (does overhead ever exceed savings), not the exact shape
+below it.
+
+**Real effect, not thermal noise - but noisy in a different way than
+anything seen before.** `load_avg_1_5_15_at_start/end` stayed flat
+(~1.9-2.4) across all 4 new cells - no drift signature like the earlier
+keep=1.0 cell. Instead, run-to-run variance exploded at this token scale:
+encode_ms std jumps from ±1-6ms (every cell down to keep=0.05) to
+±65-117ms; prompt_eval std to ±261-503ms. Individual runs within a single
+cell swing wildly - keep=0.03's 5 runs: encode 957/765/914/985/726ms,
+prompt_eval 1999/1757/1929/1703/1094ms - with no monotonic pattern (ruling
+out drift) and stable load average throughout (ruling out background
+contention). Most likely explanation: at these absolute time scales
+(encode ~700-900ms, prefill ~1-2s total), OS-level scheduling/dispatch
+jitter that's negligible against a 5000ms+ prefill becomes a large
+fraction of a ~2000ms total. Consequence: the best individual runs at
+keep=0.02 (1630ms) and keep=0.01 (1576ms) actually undercut keep=0.05's
+mean (1690.5ms) - meaning the *achievable* floor at extreme K might be
+comparable to or below keep=0.05's, even though the *mean* clearly isn't.
+Did not run additional repeats to resolve this ambiguity further (matches
+the requested protocol, n=5); flagging it as a limit of what n=5 resolves
+at this noise level rather than overstating precision.
+
+**Prune-overhead fit collapses when extended - reported, not hidden.**
+Refit `encode_ms = A + B*K` two ways: the original range (K=29-432,
+keep 0.75-0.05) still gives A=657.44ms, B=0.0806ms/token, R²=0.9918,
+max|residual|=1.84ms - unchanged, excellent. Extending to all pruned
+cells (K=6-432, adding the four new points): A=738.81ms,
+B=-0.1737ms/token, **R²=0.1502**, max|residual|=133.55ms - the fit
+degrades badly once K<29 is included; the slope even flips sign. The
+linear model that worked so well over the original range does not
+extrapolate into the noisy tiny-K regime. Both fits are kept in
+`results/p2_sweep_analysis.json` and shown side by side in the report
+(blue = original range, orange = extended, with the four new points
+marked in red) rather than silently replacing the good fit with the
+degraded one. The scoring+selection-overhead point estimate from the
+extended fit (-104ms at K=576) is not more reliable than the original
+range's (-38.96ms) - if anything less, given R²=0.15.
+
+**Qualitative degradation continues past keep=0.05, and gets stranger,
+not better** (temp=0, same image/prompt, generated text saved every
+cell): keep=0.03 elaborates the keep=0.05 hallucination ("a TV remote and
+a video game remote" vs plain "two remote controls"); keep=0.02 produces
+a hybrid ("two cats... each with a remote control in their paws");
+keep=0.015 drops the cats again ("two remote controls... white in
+color"); keep=0.01 (6 tokens) breaks completely - "The image consists of
+two photographs... a black and white image of a man standing in a
+field", content with no relation to the input image at all. Single
+image, not a systematic eval, but a clear escalating pattern, not noise.
+
+**Framing, explicit per the request:** the break-even this section
+answers H2 with sits at keep~0.03-0.05, a range where keep=0.05 itself
+already showed real output degradation before the extension even started.
+This closes H2 as a compute question - pruning overhead does eventually
+exceed savings on CPU - without implying keep=0.01-0.03 is a usable
+operating point. It isn't; the model's outputs are already unreliable
+well above that range.

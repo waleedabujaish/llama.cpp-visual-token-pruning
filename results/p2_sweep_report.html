@@ -82,27 +82,38 @@
 <div class="viz-root">
 
 <h1>Visual token pruning — keep-ratio sweep</h1>
-<div class="subtitle">LLaVA-1.5-7B, CPU-only (Apple M4 Pro), build-prune @ 82f2ccb5c · keep &isin; {1.0, 0.75, 0.5, 0.25, 0.1, 0.05} · n=5 + warmup, cooled 30s/run</div>
+<div class="subtitle">LLaVA-1.5-7B, CPU-only (Apple M4 Pro), build-prune @ 82f2ccb5c · keep &isin; {1.0, 0.75, 0.5, 0.25, 0.1, 0.05, 0.03, 0.02, 0.015, 0.01} · n=5 + warmup, cooled 30s/run</div>
 
 <p class="lede">
-TTFT_llm speedup climbs from 1.0&times; to <b>5.25&times;</b> at keep=0.05, realizing
-<b>88&ndash;100%</b> of the theoretical ceiling from token-count-linear prefill scaling
-(H1) across every ratio tested &mdash; strong support for the CPU-linear-prefill
-hypothesis. TTFT_vlm never turns around within the tested range: no break-even where
-pruning overhead exceeds savings was observed (H2) down to keep=0.05. The vision
-encoder's <i>share</i> of total time triples (12% &rarr; 39%) as prefill shrinks,
-since all 576 patches still cross all 23 ViT layers regardless of keep ratio &mdash;
-pruning only shrinks the LLM side.
+TTFT_llm speedup climbs to <b>5.25&times;</b> at keep=0.05, realizing <b>88&ndash;100%</b>
+of the theoretical ceiling from token-count-linear prefill scaling (H1) &mdash; strong
+support for the CPU-linear-prefill hypothesis, holding across the whole original
+range. <b>Extending the sweep down to keep=0.01 answers H2: TTFT_vlm does turn
+around.</b> Its minimum (mean) is at keep=0.05 (1690ms); every ratio below that is
+higher, not lower &mdash; keep=0.03 jumps to 2566ms (+52%). But at this extreme end
+(K=6&ndash;17 tokens) run-to-run noise explodes (encode_ms std goes from &plusmn;1&ndash;6ms
+in the clean range to &plusmn;65&ndash;117ms here, with zero thermal-drift signature &mdash;
+load average stayed flat) and best-case individual runs in several of the new cells
+undercut keep=0.05's mean entirely. Read as: a real turnaround, but one whose exact
+location and shape isn't resolved at n=5 in this regime &mdash; see the chart and
+table below for the honest picture, not a single clean number.
 </p>
 
 <div class="callout crit">
-<b>Qualitative degradation at the most aggressive ratio.</b> Generated text is
-byte-identical across keep &isin; {1.0, 0.75, 0.5, 0.25} ("two cats lying on a pink
-couch&hellip;"). At keep=0.1 the description already drifts (leads with "a couch",
-drops "sleeping peacefully"). At keep=0.05 (29 image tokens) the model
-<b>hallucinates</b> &mdash; "a couch with two remote controls" in place of the two
-cats. One image, temp=0, not a systematic eval &mdash; but a real, unprompted
-failure mode worth flagging rather than only reporting the speedup curve.
+<b>Qualitative degradation, escalating with keep ratio &mdash; and this is exactly
+why the extended range (keep &le; 0.05) is a scientific probe for H2, not a
+candidate operating point.</b> Generated text is byte-identical across keep &isin;
+{1.0, 0.75, 0.5, 0.25}. At keep=0.1 it drifts (same cats, softer phrasing). At
+keep=0.05 (29 tokens) the model <b>already hallucinates</b> &mdash; "two remote
+controls" for two cats &mdash; before the extension even begins. Below that it gets
+stranger, not better: keep=0.03 elaborates the hallucination ("a TV remote and a
+video game remote"); keep=0.02 produces a hybrid ("two cats&hellip; each with a
+remote control in their paws"); keep=0.015 drops the cats entirely again; keep=0.01
+(6 tokens) breaks completely &mdash; "two photographs&hellip; a black and white image
+of a man standing in a field", content with no relation to the input at all. One
+image, temp=0, not a systematic eval &mdash; but do not read a compute break-even
+found at keep=0.01&ndash;0.03 as "so prune to 1&ndash;3%": the model's outputs are
+already unreliable well above that range.
 </div>
 
 <h2>Full results table</h2>
@@ -110,13 +121,13 @@ failure mode worth flagging rather than only reporting the speedup curve.
 <table id="results-table"></table>
 </div>
 
-<h2>TTFT breakdown vs keep ratio</h2>
+<h2>TTFT breakdown vs keep ratio &mdash; H2: does it turn around?</h2>
 <div class="legend">
   <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>TTFT_vlm (encoder + prefill)</div>
   <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>TTFT_llm (prefill only)</div>
 </div>
-<div class="card"><svg id="chart-ttft" width="900" height="320"></svg></div>
-<div class="footnote">Both curves fall monotonically as keep decreases; the gap between them is encoder time, which barely moves (742.8ms &rarr; 660.4ms) while TTFT_llm drops from 5407ms to 1030ms.</div>
+<div class="card"><svg id="chart-ttft" width="900" height="340"></svg></div>
+<div class="footnote">Both curves fall monotonically from keep=1.0 to keep=0.05 (the gap between them is encoder time, nearly flat at 742.8ms &rarr; 660.4ms, while TTFT_llm drops 5407ms &rarr; 1030ms) &mdash; <b>then TTFT_vlm turns around</b> at keep=0.03 and stays above the keep=0.05 floor through keep=0.01. Thin vertical whiskers show each cell's observed min&ndash;max across 5 runs: tight everywhere above keep=0.05, wide below it &mdash; the turnaround in the mean is real and repeated across 4 independent cells, but individual best-case runs at keep=0.02/0.01 undercut the keep=0.05 mean, so treat the exact shape below keep=0.05 as noisy, not a clean curve.</div>
 
 <h2>Speedup vs theoretical ceiling (H1)</h2>
 <div class="legend">
@@ -131,51 +142,55 @@ failure mode worth flagging rather than only reporting the speedup curve.
 <div class="footnote">Rises from 12.1% to 39.1% &mdash; not because the encoder gets slower, but because prefill (the denominator's other term) shrinks so much faster. At aggressive keep ratios the encoder becomes the next bottleneck to attack.</div>
 
 <h2>Prune-overhead isolation: encode_ms = A + B&middot;K</h2>
-<div class="card"><svg id="chart-fit" width="900" height="320"></svg></div>
+<div class="legend">
+  <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>Original-range points (K&ge;29)</div>
+  <div class="legend-item"><span class="swatch" style="background:var(--status-crit)"></span>Extended points (K&lt;29, new)</div>
+</div>
+<div class="card"><svg id="chart-fit" width="900" height="340"></svg></div>
 <div class="footnote" id="fit-footnote"></div>
 
 <script>
-const DATA = {"tag_prefix": "p2_sweep", "table": [{"keep": 1.0, "K_image_tokens": 576, "n_prompt_tokens": 593, "encode_ms_mean": 742.8, "encode_ms_std": 31.68122472380132, "ttft_llm_ms_mean": 5407.444, "ttft_llm_ms_std": 89.07873781099534, "ttft_vlm_ms_mean": 6150.244, "ttft_vlm_ms_std": 113.23278469595309, "encoder_fraction_mean": 0.12074627309329869, "decode_tok_per_s_mean": 41.21135242486286, "max_rss_mib_mean": 10366.04375, "peak_footprint_mib_mean": 6659.192518615722, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.0, "speedup_ttft_vlm": 1.0, "theoretical_ttft_llm_ms": 5407.444, "fraction_of_theoretical_ceiling_h1": null}, {"keep": 0.75, "K_image_tokens": 432, "n_prompt_tokens": 449, "encode_ms_mean": 693.2, "encode_ms_std": 5.848076606885378, "ttft_llm_ms_mean": 4096.008, "ttft_llm_ms_std": 54.50279460724906, "ttft_vlm_ms_mean": 4789.208, "ttft_vlm_ms_std": 57.333721490933875, "encoder_fraction_mean": 0.14475253872703067, "decode_tok_per_s_mean": 44.01872684084528, "max_rss_mib_mean": 10354.046875, "peak_footprint_mib_mean": 6622.458065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.320174179347306, "speedup_ttft_vlm": 1.2841881162814395, "theoretical_ttft_llm_ms": 4094.3378684654303, "fraction_of_theoretical_ceiling_h1": 0.9987281062098022}, {"keep": 0.5, "K_image_tokens": 288, "n_prompt_tokens": 305, "encode_ms_mean": 678.8, "encode_ms_std": 1.9235384061671346, "ttft_llm_ms_mean": 2953.51, "ttft_llm_ms_std": 2.2717064070869575, "ttft_vlm_ms_mean": 3632.31, "ttft_vlm_ms_std": 4.080520800094003, "encoder_fraction_mean": 0.1868780511013374, "decode_tok_per_s_mean": 45.382894053316114, "max_rss_mib_mean": 10320.934375, "peak_footprint_mib_mean": 6589.717395019531, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.8308534591045909, "speedup_ttft_vlm": 1.693204599827658, "theoretical_ttft_llm_ms": 2781.2317369308603, "fraction_of_theoretical_ceiling_h1": 0.9344004803070237}, {"keep": 0.25, "K_image_tokens": 144, "n_prompt_tokens": 161, "encode_ms_mean": 670.0, "encode_ms_std": 3.082207001484488, "ttft_llm_ms_mean": 1883.532, "ttft_llm_ms_std": 4.130886103489194, "ttft_vlm_ms_mean": 2553.532, "ttft_vlm_ms_std": 7.199598599922077, "encoder_fraction_mean": 0.2623806291562026, "decode_tok_per_s_mean": 47.89868019489716, "max_rss_mib_mean": 10284.209375, "peak_footprint_mib_mean": 6552.739274597168, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 2.870906361028111, "speedup_ttft_vlm": 2.4085243498025477, "theoretical_ttft_llm_ms": 1468.1256053962902, "fraction_of_theoretical_ceiling_h1": 0.8945486622323405}, {"keep": 0.1, "K_image_tokens": 58, "n_prompt_tokens": 75, "encode_ms_mean": 661.4, "encode_ms_std": 1.140175425099138, "ttft_llm_ms_mean": 1247.336, "ttft_llm_ms_std": 0.9249486472231991, "ttft_vlm_ms_mean": 1908.736, "ttft_vlm_ms_std": 1.1245132280236028, "encoder_fraction_mean": 0.3465119459098205, "decode_tok_per_s_mean": 49.65151725863802, "max_rss_mib_mean": 10262.321875, "peak_footprint_mib_mean": 6531.445561218262, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two cats lying on it. One cat is positioned on the left side of the couch, while the other cat", "identical_output": true, "speedup_ttft_llm": 4.335194366233317, "speedup_ttft_vlm": 3.222155394983905, "theoretical_ttft_llm_ms": 683.9094435075885, "fraction_of_theoretical_ceiling_h1": 0.8807192898127543}, {"keep": 0.05, "K_image_tokens": 29, "n_prompt_tokens": 46, "encode_ms_mean": 660.4, "encode_ms_std": 2.6076809620810595, "ttft_llm_ms_mean": 1030.058, "ttft_llm_ms_std": 1.9380841055020832, "ttft_vlm_ms_mean": 1690.458, "ttft_vlm_ms_std": 4.4986853635256105, "encoder_fraction_mean": 0.3906623167983599, "decode_tok_per_s_mean": 50.02772350698429, "max_rss_mib_mean": 10256.9, "peak_footprint_mib_mean": 6525.508065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two remote controls placed on it. One remote control is located on the left side of the couch, while the other is", "identical_output": true, "speedup_ttft_llm": 5.249650019707628, "speedup_ttft_vlm": 3.638211656249371, "theoretical_ttft_llm_ms": 419.46445868465435, "fraction_of_theoretical_ceiling_h1": 0.8775869996543069}], "prune_overhead_fit": {"model": "encode_ms = A + B*K, fit over pruned cells only (keep<1.0)", "A_intercept_ms": 657.4359750344981, "B_slope_ms_per_token": 0.08056795460305888, "r_squared": 0.9917639267865284, "residuals_ms": [0.9586685769804717, -1.83954596017918, 0.9622395026614186, -0.7089164014755625, 0.6275542820130795], "residual_max_abs_ms": 1.83954596017918, "residual_std_ms": 1.1068212576326324, "points_K": [432.0, 288.0, 144.0, 58.0, 29.0], "points_encode_ms": [693.2, 678.8, 670.0, 661.4, 660.4], "fitted_encode_ms_at_K576": 703.84311688586, "measured_encode_ms_at_keep1": 742.8, "scoring_selection_overhead_ms": -38.95688311413994, "note": "overhead = fit(K=576) - measured(keep=1.0); these differ only by the presence of the scoring/top-K/gather ops, so the difference isolates their cost. A negative value would mean the fit doesn't extrapolate cleanly to the unpruned case -- report as-is either way."}, "bend_slopes_ttft_vlm_vs_keep": [{"between_keep": [1.0, 0.75], "d_ttft_vlm_ms_per_d_keep": 5444.144}, {"between_keep": [0.75, 0.5], "d_ttft_vlm_ms_per_d_keep": 4627.591999999999}, {"between_keep": [0.5, 0.25], "d_ttft_vlm_ms_per_d_keep": 4315.111999999999}, {"between_keep": [0.25, 0.1], "d_ttft_vlm_ms_per_d_keep": 4298.64}, {"between_keep": [0.1, 0.05], "d_ttft_vlm_ms_per_d_keep": 4365.56}]};
+const DATA = {"tag_prefix": "p2_sweep", "table": [{"keep": 1.0, "K_image_tokens": 576, "n_prompt_tokens": 593, "encode_ms_mean": 742.8, "encode_ms_std": 31.68122472380132, "ttft_llm_ms_mean": 5407.444, "ttft_llm_ms_std": 89.07873781099534, "ttft_vlm_ms_mean": 6150.244, "ttft_vlm_ms_std": 113.23278469595309, "ttft_vlm_ms_min": 6043.19, "ttft_vlm_ms_max": 6315.81, "encoder_fraction_mean": 0.12074627309329869, "decode_tok_per_s_mean": 41.21135242486286, "max_rss_mib_mean": 10366.04375, "peak_footprint_mib_mean": 6659.192518615722, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.0, "speedup_ttft_vlm": 1.0, "theoretical_ttft_llm_ms": 5407.444, "fraction_of_theoretical_ceiling_h1": null}, {"keep": 0.75, "K_image_tokens": 432, "n_prompt_tokens": 449, "encode_ms_mean": 693.2, "encode_ms_std": 5.848076606885378, "ttft_llm_ms_mean": 4096.008, "ttft_llm_ms_std": 54.50279460724906, "ttft_vlm_ms_mean": 4789.208, "ttft_vlm_ms_std": 57.333721490933875, "ttft_vlm_ms_min": 4743.030000000001, "ttft_vlm_ms_max": 4857.95, "encoder_fraction_mean": 0.14475253872703067, "decode_tok_per_s_mean": 44.01872684084528, "max_rss_mib_mean": 10354.046875, "peak_footprint_mib_mean": 6622.458065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.320174179347306, "speedup_ttft_vlm": 1.2841881162814395, "theoretical_ttft_llm_ms": 4094.3378684654303, "fraction_of_theoretical_ceiling_h1": 0.9987281062098022}, {"keep": 0.5, "K_image_tokens": 288, "n_prompt_tokens": 305, "encode_ms_mean": 678.8, "encode_ms_std": 1.9235384061671346, "ttft_llm_ms_mean": 2953.51, "ttft_llm_ms_std": 2.2717064070869575, "ttft_vlm_ms_mean": 3632.31, "ttft_vlm_ms_std": 4.080520800094003, "ttft_vlm_ms_min": 3629.42, "ttft_vlm_ms_max": 3639.29, "encoder_fraction_mean": 0.1868780511013374, "decode_tok_per_s_mean": 45.382894053316114, "max_rss_mib_mean": 10320.934375, "peak_footprint_mib_mean": 6589.717395019531, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 1.8308534591045909, "speedup_ttft_vlm": 1.693204599827658, "theoretical_ttft_llm_ms": 2781.2317369308603, "fraction_of_theoretical_ceiling_h1": 0.9344004803070237}, {"keep": 0.25, "K_image_tokens": 144, "n_prompt_tokens": 161, "encode_ms_mean": 670.0, "encode_ms_std": 3.082207001484488, "ttft_llm_ms_mean": 1883.532, "ttft_llm_ms_std": 4.130886103489194, "ttft_vlm_ms_mean": 2553.532, "ttft_vlm_ms_std": 7.199598599922077, "ttft_vlm_ms_min": 2548.05, "ttft_vlm_ms_max": 2565.05, "encoder_fraction_mean": 0.2623806291562026, "decode_tok_per_s_mean": 47.89868019489716, "max_rss_mib_mean": 10284.209375, "peak_footprint_mib_mean": 6552.739274597168, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats lying on a pink couch, both sleeping peacefully. One cat is located on the left side of the couch", "identical_output": true, "speedup_ttft_llm": 2.870906361028111, "speedup_ttft_vlm": 2.4085243498025477, "theoretical_ttft_llm_ms": 1468.1256053962902, "fraction_of_theoretical_ceiling_h1": 0.8945486622323405}, {"keep": 0.1, "K_image_tokens": 58, "n_prompt_tokens": 75, "encode_ms_mean": 661.4, "encode_ms_std": 1.140175425099138, "ttft_llm_ms_mean": 1247.336, "ttft_llm_ms_std": 0.9249486472231991, "ttft_vlm_ms_mean": 1908.736, "ttft_vlm_ms_std": 1.1245132280236028, "ttft_vlm_ms_min": 1907.08, "ttft_vlm_ms_max": 1909.84, "encoder_fraction_mean": 0.3465119459098205, "decode_tok_per_s_mean": 49.65151725863802, "max_rss_mib_mean": 10262.321875, "peak_footprint_mib_mean": 6531.445561218262, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two cats lying on it. One cat is positioned on the left side of the couch, while the other cat", "identical_output": true, "speedup_ttft_llm": 4.335194366233317, "speedup_ttft_vlm": 3.222155394983905, "theoretical_ttft_llm_ms": 683.9094435075885, "fraction_of_theoretical_ceiling_h1": 0.8807192898127543}, {"keep": 0.05, "K_image_tokens": 29, "n_prompt_tokens": 46, "encode_ms_mean": 660.4, "encode_ms_std": 2.6076809620810595, "ttft_llm_ms_mean": 1030.058, "ttft_llm_ms_std": 1.9380841055020832, "ttft_vlm_ms_mean": 1690.458, "ttft_vlm_ms_std": 4.4986853635256105, "ttft_vlm_ms_min": 1687.16, "ttft_vlm_ms_max": 1698.3, "encoder_fraction_mean": 0.3906623167983599, "decode_tok_per_s_mean": 50.02772350698429, "max_rss_mib_mean": 10256.9, "peak_footprint_mib_mean": 6525.508065795899, "kv_buffer_mib": 2048.0, "generated_text": "The image features a couch with two remote controls placed on it. One remote control is located on the left side of the couch, while the other is", "identical_output": true, "speedup_ttft_llm": 5.249650019707628, "speedup_ttft_vlm": 3.638211656249371, "theoretical_ttft_llm_ms": 419.46445868465435, "fraction_of_theoretical_ceiling_h1": 0.8775869996543069}, {"keep": 0.03, "K_image_tokens": 17, "n_prompt_tokens": 34, "encode_ms_mean": 869.4, "encode_ms_std": 116.71460919696386, "ttft_llm_ms_mean": 1696.596, "ttft_llm_ms_std": 357.7758338401296, "ttft_vlm_ms_mean": 2565.996, "ttft_vlm_ms_std": 447.7527233641355, "ttft_vlm_ms_min": 1820.35, "ttft_vlm_ms_max": 2955.95, "encoder_fraction_mean": 0.34275194675148907, "decode_tok_per_s_mean": 48.92121395884312, "max_rss_mib_mean": 9068.696875, "peak_footprint_mib_mean": 6529.6519027709965, "kv_buffer_mib": 2048.0, "generated_text": "The image features two remote controls placed side by side, with one remote being a TV remote and the other being a video game remote. The TV remote is located", "identical_output": true, "speedup_ttft_llm": 3.1872313738804054, "speedup_ttft_vlm": 2.3968252483635983, "theoretical_ttft_llm_ms": 310.0389477234402, "fraction_of_theoretical_ceiling_h1": 0.7279876646927819}, {"keep": 0.02, "K_image_tokens": 12, "n_prompt_tokens": 29, "encode_ms_mean": 728.0, "encode_ms_std": 65.19202405202648, "ttft_llm_ms_mean": 1296.3400000000001, "ttft_llm_ms_std": 260.6648209866456, "ttft_vlm_ms_mean": 2024.3400000000001, "ttft_vlm_ms_std": 307.4339342037571, "ttft_vlm_ms_min": 1630.46, "ttft_vlm_ms_max": 2352.17, "encoder_fraction_mean": 0.363534850015118, "decode_tok_per_s_mean": 48.7346189028386, "max_rss_mib_mean": 9018.315625, "peak_footprint_mib_mean": 6525.736264038086, "kv_buffer_mib": 2048.0, "generated_text": "The image features two cats sitting on a couch, each with a remote control in their paws. The cats are positioned close to each other", "identical_output": true, "speedup_ttft_llm": 4.171316167054939, "speedup_ttft_vlm": 3.0381477419801017, "theoretical_ttft_llm_ms": 264.44498482293426, "fraction_of_theoretical_ceiling_h1": 0.7993592819808193}, {"keep": 0.015, "K_image_tokens": 9, "n_prompt_tokens": 26, "encode_ms_mean": 764.2, "encode_ms_std": 71.35264536091147, "ttft_llm_ms_mean": 1629.032, "ttft_llm_ms_std": 415.3022657896295, "ttft_vlm_ms_mean": 2393.232, "ttft_vlm_ms_std": 469.4217517009625, "ttft_vlm_ms_min": 1663.31, "ttft_vlm_ms_max": 2828.26, "encoder_fraction_mean": 0.32702444255146784, "decode_tok_per_s_mean": 50.14405098039702, "max_rss_mib_mean": 9121.55625, "peak_footprint_mib_mean": 6527.105009460449, "kv_buffer_mib": 2048.0, "generated_text": "The image features two remote controls placed side by side, both of which are white in color. The remotes are designed to control electronic devices, such as televis", "identical_output": true, "speedup_ttft_llm": 3.3194215951558967, "speedup_ttft_vlm": 2.56984863983099, "theoretical_ttft_llm_ms": 237.08860708263072, "fraction_of_theoretical_ceiling_h1": 0.73078380746822}, {"keep": 0.01, "K_image_tokens": 6, "n_prompt_tokens": 23, "encode_ms_mean": 751.0, "encode_ms_std": 78.6987928751134, "ttft_llm_ms_mean": 1317.192, "ttft_llm_ms_std": 503.47561894296337, "ttft_vlm_ms_mean": 2068.192, "ttft_vlm_ms_std": 576.0122948948225, "ttft_vlm_ms_min": 1575.67, "ttft_vlm_ms_max": 2894.07, "encoder_fraction_mean": 0.37652837448947785, "decode_tok_per_s_mean": 48.32225966041912, "max_rss_mib_mean": 9105.490625, "peak_footprint_mib_mean": 6525.951866149902, "kv_buffer_mib": 2048.0, "generated_text": "The image consists of two photographs, each depicting a different scene. The first photograph is a black and white image of a man standing in a field", "identical_output": true, "speedup_ttft_llm": 4.105281538302693, "speedup_ttft_vlm": 2.973729711748232, "theoretical_ttft_llm_ms": 209.73222934232717, "fraction_of_theoretical_ceiling_h1": 0.7869332083957505}], "prune_overhead_fit": {"label": "extended range (keep 0.75-0.01, K 6-432)", "A_intercept_ms": 738.808598467973, "B_slope_ms_per_token": -0.17374611679573554, "r_squared": 0.1501752757066237, "residuals_ms": [29.449723987784864, -9.96971683080119, -43.78915764938699, -67.33132369382031, -73.3699610808967, 133.54508551755453, -8.723645066424183, 26.95511658318867, 13.23387823280143], "residual_max_abs_ms": 133.54508551755453, "residual_std_ms": 59.26675652026377, "points_K": [432.0, 288.0, 144.0, 58.0, 29.0, 17.0, 12.0, 9.0, 6.0], "points_encode_ms": [693.2, 678.8, 670.0, 661.4, 660.4, 869.4, 728.0, 764.2, 751.0], "fitted_encode_ms_at_K576": 638.7308351936293, "scoring_selection_overhead_ms": -104.06916480637062, "comparison_original_range_fit": {"label": "original range (keep 0.75-0.05, K 29-432)", "A_intercept_ms": 657.4359750344981, "B_slope_ms_per_token": 0.08056795460305888, "r_squared": 0.9917639267865284, "residuals_ms": [0.9586685769804717, -1.83954596017918, 0.9622395026614186, -0.7089164014755625, 0.6275542820130795], "residual_max_abs_ms": 1.83954596017918, "residual_std_ms": 1.1068212576326324, "points_K": [432.0, 288.0, 144.0, 58.0, 29.0], "points_encode_ms": [693.2, 678.8, 670.0, 661.4, 660.4], "fitted_encode_ms_at_K576": 703.84311688586, "scoring_selection_overhead_ms": -38.95688311413994}, "measured_encode_ms_at_keep1": 742.8, "model": "encode_ms = A + B*K, extended fit over ALL pruned cells (keep<1.0, K=6..432)", "note_extended": "Extended fit R\u00b2=0.1502 (max|resid|=133.5ms) vs the original range's R\u00b2=0.9918 (max|resid|=1.8ms) - the linear model that fit K=29..432 excellently does not extrapolate to K<29; report both, don't silently replace the good fit with the degraded one.", "note": "overhead = fit(K=576) - measured(keep=1.0); these differ only by the presence of the scoring/top-K/gather ops, so the difference isolates their cost. A negative value would mean the fit doesn't extrapolate cleanly to the unpruned case -- report as-is either way."}, "bend_slopes_ttft_vlm_vs_keep": [{"between_keep": [1.0, 0.75], "d_ttft_vlm_ms_per_d_keep": 5444.144}, {"between_keep": [0.75, 0.5], "d_ttft_vlm_ms_per_d_keep": 4627.591999999999}, {"between_keep": [0.5, 0.25], "d_ttft_vlm_ms_per_d_keep": 4315.111999999999}, {"between_keep": [0.25, 0.1], "d_ttft_vlm_ms_per_d_keep": 4298.64}, {"between_keep": [0.1, 0.05], "d_ttft_vlm_ms_per_d_keep": 4365.56}, {"between_keep": [0.05, 0.03], "d_ttft_vlm_ms_per_d_keep": -43776.899999999994}, {"between_keep": [0.03, 0.02], "d_ttft_vlm_ms_per_d_keep": 54165.600000000006}, {"between_keep": [0.02, 0.015], "d_ttft_vlm_ms_per_d_keep": -73778.39999999995}, {"between_keep": [0.015, 0.01], "d_ttft_vlm_ms_per_d_keep": 65008.0}]};
 
 function fmt(x, d=1) { return x === null || x === undefined ? '&mdash;' : Number(x).toFixed(d); }
 
 // ---------- table ----------
 (function renderTable() {
   const cols = [
-    ['keep', 'Keep', v => v.toFixed(2)],
+    ['keep', 'Keep', v => v.toFixed(3).replace(/0+$/, '').replace(/\.$/, '')],
     ['K_image_tokens', 'K', v => v],
     ['encode_ms_mean', 'Encoder (ms)', (v,r) => `${fmt(v)}±${fmt(r.encode_ms_std)}`],
     ['ttft_llm_ms_mean', 'TTFT_llm (ms)', (v,r) => `${fmt(v)}±${fmt(r.ttft_llm_ms_std)}`],
-    ['ttft_vlm_ms_mean', 'TTFT_vlm (ms)', (v,r) => `${fmt(v)}±${fmt(r.ttft_vlm_ms_std)}`],
+    ['ttft_vlm_ms_mean', 'TTFT_vlm (ms)', (v,r) => `${fmt(v)}±${fmt(r.ttft_vlm_ms_std)} (${fmt(r.ttft_vlm_ms_min,0)}-${fmt(r.ttft_vlm_ms_max,0)})`],
     ['encoder_fraction_mean', 'Enc %', v => fmt(v*100) + '%'],
     ['speedup_ttft_llm', 'Speedup', v => fmt(v,2) + '×'],
     ['fraction_of_theoretical_ceiling_h1', '% of ceiling', v => v==null ? '&mdash;' : fmt(v*100) + '%'],
     ['decode_tok_per_s_mean', 'Decode tok/s', v => fmt(v,1)],
     ['peak_footprint_mib_mean', 'Peak mem (MiB)', v => fmt(v,0)],
-    ['identical_output', 'Text', (v,r,i) => i===0 ? 'baseline' : (v ? 'matches det.' : 'n/a')],
+    ['generated_text', 'Generated text (temp=0)', v => `<span style="font-weight:400">${v.slice(0,60)}&hellip;</span>`],
   ];
   let html = '<tr>' + cols.map(c => `<th>${c[1]}</th>`).join('') + '</tr>';
   DATA.table.forEach((row, i) => {
-    html += '<tr>' + cols.map(c => `<td>${c[2](row[c[0]], row, i)}</td>`).join('') + '</tr>';
+    html += '<tr>' + cols.map(c => `<td style="${c[0]==='generated_text'?'text-align:left;white-space:normal;max-width:280px':''}">${c[2](row[c[0]], row, i)}</td>`).join('') + '</tr>';
   });
   document.getElementById('results-table').innerHTML = html;
 })();
 
-// ---------- generic line chart ----------
+// ---------- generic ordinal-x line chart (points evenly spaced by index, not value --
+// keep ratios span 1.0 to 0.01, a value-proportional axis would crush everything below
+// keep=0.1 into a sliver) ----------
 function lineChart(svgId, points, series, opts) {
   const svg = document.getElementById(svgId);
   const W = +svg.getAttribute('width'), H = +svg.getAttribute('height');
   const M = {top: 16, right: 44, bottom: 34, left: 54};
   const iw = W - M.left - M.right, ih = H - M.top - M.bottom;
-  const xs = points.map(p => p.x);
-  const xMin = Math.min(...xs), xMax = Math.max(...xs);
+  const n = points.length;
   let yMin = opts.yMin !== undefined ? opts.yMin : 0;
   let yMax = opts.yMax !== undefined ? opts.yMax : Math.max(...series.flatMap(s => points.map(p => p[s.key]))) * 1.12;
-  const xPix = x => M.left + (xMax === xMin ? iw/2 : (x - xMin) / (xMax - xMin) * iw);
+  const xPix = i => M.left + (n === 1 ? iw/2 : i / (n - 1) * iw);
   const yPix = y => M.top + ih - (y - yMin) / (yMax - yMin) * ih;
 
   let svgContent = '';
-  // gridlines (y)
   const yTicks = opts.yTicks || 5;
   for (let i = 0; i <= yTicks; i++) {
     const y = yMin + (yMax - yMin) * i / yTicks;
@@ -183,25 +198,45 @@ function lineChart(svgId, points, series, opts) {
     svgContent += `<line class="gridline" x1="${M.left}" y1="${yp}" x2="${W-M.right}" y2="${yp}"/>`;
     svgContent += `<text class="axis-text" x="${M.left-8}" y="${yp+3}" text-anchor="end">${opts.yFmt ? opts.yFmt(y) : y.toFixed(0)}</text>`;
   }
-  // x ticks (one per data point, since keep ratios are irregular)
-  points.forEach(p => {
-    const xp = xPix(p.x);
+  points.forEach((p, i) => {
+    const xp = xPix(i);
     svgContent += `<text class="axis-text" x="${xp}" y="${H-M.bottom+18}" text-anchor="middle">${opts.xFmt ? opts.xFmt(p.x) : p.x}</text>`;
   });
   svgContent += `<text class="axis-text" x="${W/2}" y="${H-4}" text-anchor="middle" font-size="11">${opts.xLabel||''}</text>`;
 
+  // optional min-max whiskers (drawn under the lines)
+  if (opts.whiskerKey) {
+    points.forEach((p, i) => {
+      const lo = p[opts.whiskerKey][0], hi = p[opts.whiskerKey][1];
+      if (lo === hi) return;
+      const xp = xPix(i);
+      svgContent += `<line x1="${xp}" y1="${yPix(lo)}" x2="${xp}" y2="${yPix(hi)}" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.5"/>`;
+      svgContent += `<line x1="${xp-4}" y1="${yPix(lo)}" x2="${xp+4}" y2="${yPix(lo)}" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.5"/>`;
+      svgContent += `<line x1="${xp-4}" y1="${yPix(hi)}" x2="${xp+4}" y2="${yPix(hi)}" stroke="var(--text-muted)" stroke-width="1.5" opacity="0.5"/>`;
+    });
+  }
+
   series.forEach(s => {
-    const path = points.map((p,i) => `${i===0?'M':'L'}${xPix(p.x).toFixed(1)},${yPix(p[s.key]).toFixed(1)}`).join(' ');
+    const path = points.map((p,i) => `${i===0?'M':'L'}${xPix(i).toFixed(1)},${yPix(p[s.key]).toFixed(1)}`).join(' ');
     svgContent += `<path class="line" d="${path}" stroke="${s.color}"/>`;
     points.forEach((p, i) => {
-      const xp = xPix(p.x), yp = yPix(p[s.key]);
+      const xp = xPix(i), yp = yPix(p[s.key]);
       svgContent += `<circle class="dot" cx="${xp}" cy="${yp}" r="4" fill="${s.color}"/>`;
-      svgContent += `<circle class="dot-hit" data-tip="${s.label}: ${opts.tipFmt ? opts.tipFmt(p[s.key]) : p[s.key]} (keep=${p.x})" cx="${xp}" cy="${yp}" r="10"/>`;
+      const wtip = opts.whiskerKey ? ` (range ${opts.tipFmt(p[opts.whiskerKey][0])}-${opts.tipFmt(p[opts.whiskerKey][1])})` : '';
+      svgContent += `<circle class="dot-hit" data-tip="${s.label}: ${opts.tipFmt ? opts.tipFmt(p[s.key]) : p[s.key]}${s.key===opts.whiskerSeriesKey?wtip:''} (keep=${p.x})" cx="${xp}" cy="${yp}" r="10"/>`;
     });
-    // direct label at the right end
     const last = points[points.length-1];
-    svgContent += `<text class="direct-label" x="${xPix(last.x)+10}" y="${yPix(last[s.key])+4}" fill="${s.color}">${opts.endFmt ? opts.endFmt(last[s.key]) : last[s.key]}</text>`;
+    svgContent += `<text class="direct-label" x="${xPix(n-1)+10}" y="${yPix(last[s.key])+4}" fill="${s.color}">${opts.endFmt ? opts.endFmt(last[s.key]) : last[s.key]}</text>`;
   });
+
+  // mark the H2 minimum, if requested
+  if (opts.markMinKey) {
+    let minI = 0;
+    points.forEach((p, i) => { if (p[opts.markMinKey] < points[minI][opts.markMinKey]) minI = i; });
+    const xp = xPix(minI), yp = yPix(points[minI][opts.markMinKey]);
+    svgContent += `<circle cx="${xp}" cy="${yp}" r="9" fill="none" stroke="var(--status-good)" stroke-width="2"/>`;
+    svgContent += `<text class="direct-label" x="${xp}" y="${yp-16}" text-anchor="middle" fill="var(--status-good)">min</text>`;
+  }
 
   svg.innerHTML = svgContent;
   attachTooltip(svg);
@@ -226,17 +261,19 @@ function attachTooltip(svg) {
   });
 }
 
-// ---------- chart 1: TTFT breakdown ----------
+// ---------- chart 1: TTFT breakdown, with whiskers + H2 minimum marker ----------
 (function() {
   const cs = getComputedStyle(document.querySelector('.viz-root'));
   const c1 = cs.getPropertyValue('--series-1').trim(), c2 = cs.getPropertyValue('--series-2').trim();
   const points = DATA.table.slice().reverse().map(r => ({
-    x: r.keep, ttft_vlm: r.ttft_vlm_ms_mean, ttft_llm: r.ttft_llm_ms_mean
+    x: r.keep, ttft_vlm: r.ttft_vlm_ms_mean, ttft_llm: r.ttft_llm_ms_mean,
+    ttft_vlm_range: [r.ttft_vlm_ms_min, r.ttft_vlm_ms_max],
   }));
   lineChart('chart-ttft', points,
     [{key:'ttft_vlm', color:c1, label:'TTFT_vlm'}, {key:'ttft_llm', color:c2, label:'TTFT_llm'}],
-    {yMax: 6800, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>(y/1000).toFixed(1)+'s',
-     endFmt: v=>(v/1000).toFixed(2)+'s', tipFmt: v=>v.toFixed(0)+'ms'});
+    {yMax: 6800, xLabel: 'keep ratio (ordinal spacing)', xFmt: x=>x.toFixed(3).replace(/0+$/,'').replace(/\.$/,''),
+     yFmt: y=>(y/1000).toFixed(1)+'s', endFmt: v=>(v/1000).toFixed(2)+'s', tipFmt: v=>v.toFixed(0)+'ms',
+     whiskerKey: 'ttft_vlm_range', whiskerSeriesKey: 'ttft_vlm', markMinKey: 'ttft_vlm'});
 })();
 
 // ---------- chart 2: speedup vs ceiling ----------
@@ -251,8 +288,8 @@ function attachTooltip(svg) {
   }));
   lineChart('chart-speedup', points,
     [{key:'measured', color:c1, label:'Measured'}, {key:'theoretical', color:c2, label:'Theoretical ceiling'}],
-    {yMax: 6, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>y.toFixed(1)+'×',
-     endFmt: v=>v.toFixed(2)+'×', tipFmt: v=>v.toFixed(3)+'×'});
+    {yMax: 6, xLabel: 'keep ratio (ordinal spacing)', xFmt: x=>x.toFixed(3).replace(/0+$/,'').replace(/\.$/,''),
+     yFmt: y=>y.toFixed(1)+'×', endFmt: v=>v.toFixed(2)+'×', tipFmt: v=>v.toFixed(3)+'×'});
 })();
 
 // ---------- chart 3: encoder fraction ----------
@@ -262,25 +299,28 @@ function attachTooltip(svg) {
   const points = DATA.table.slice().reverse().map(r => ({x: r.keep, frac: r.encoder_fraction_mean*100}));
   lineChart('chart-encfrac', points,
     [{key:'frac', color:c1, label:'Encoder %'}],
-    {yMax: 45, xLabel: 'keep ratio', xFmt: x=>x.toFixed(2), yFmt: y=>y.toFixed(0)+'%',
-     endFmt: v=>v.toFixed(1)+'%', tipFmt: v=>v.toFixed(2)+'%'});
+    {yMax: 45, xLabel: 'keep ratio (ordinal spacing)', xFmt: x=>x.toFixed(3).replace(/0+$/,'').replace(/\.$/,''),
+     yFmt: y=>y.toFixed(0)+'%', endFmt: v=>v.toFixed(1)+'%', tipFmt: v=>v.toFixed(2)+'%'});
 })();
 
-// ---------- chart 4: prune-overhead fit ----------
+// ---------- chart 4: prune-overhead fit -- both fits, extended points highlighted ----------
 (function() {
   const cs = getComputedStyle(document.querySelector('.viz-root'));
   const c1 = cs.getPropertyValue('--series-1').trim(), c3 = cs.getPropertyValue('--series-3').trim();
+  const cCrit = cs.getPropertyValue('--status-crit').trim();
   const fit = DATA.prune_overhead_fit;
+  const fitOrig = fit.comparison_original_range_fit;
   const svg = document.getElementById('chart-fit');
-  const W = 900, H = 320, M = {top:16, right:110, bottom:34, left:54};
+  const W = 900, H = 340, M = {top:16, right:110, bottom:34, left:54};
   const iw = W-M.left-M.right, ih = H-M.top-M.bottom;
-  const allK = fit.points_K.concat([576]);
   const xMin = 0, xMax = 620;
-  const yMin = 620, yMax = 780;
+  const allY = fit.points_encode_ms.concat([fit.measured_encode_ms_at_keep1]);
+  const yMin = Math.floor(Math.min(...allY)/50)*50 - 20, yMax = Math.ceil(Math.max(...allY)/50)*50 + 20;
   const xPix = x => M.left + (x-xMin)/(xMax-xMin)*iw;
   const yPix = y => M.top + ih - (y-yMin)/(yMax-yMin)*ih;
   let c = '';
-  for (let i=0;i<=4;i++) { const y = yMin+(yMax-yMin)*i/4; const yp=yPix(y);
+  const yStep = Math.round((yMax-yMin)/5/10)*10 || 10;
+  for (let y=Math.ceil(yMin/yStep)*yStep; y<=yMax; y+=yStep) { const yp=yPix(y);
     c += `<line class="gridline" x1="${M.left}" y1="${yp}" x2="${W-M.right}" y2="${yp}"/>`;
     c += `<text class="axis-text" x="${M.left-8}" y="${yp+3}" text-anchor="end">${y.toFixed(0)}ms</text>`; }
   [0,100,200,300,400,500,576].forEach(x => {
@@ -288,44 +328,47 @@ function attachTooltip(svg) {
     c += `<text class="axis-text" x="${xp}" y="${H-M.bottom+18}" text-anchor="middle">${x}</text>`;
   });
   c += `<text class="axis-text" x="${W/2-30}" y="${H-4}" text-anchor="middle" font-size="11">K (kept image tokens)</text>`;
-  // fit line across full range including extrapolation to 576
-  const fx0 = 0, fx1 = 576;
-  const fy0 = fit.A_intercept_ms + fit.B_slope_ms_per_token*fx0;
-  const fy1 = fit.A_intercept_ms + fit.B_slope_ms_per_token*fx1;
-  c += `<line class="fit-line" x1="${xPix(fx0)}" y1="${yPix(fy0)}" x2="${xPix(fx1)}" y2="${yPix(fy1)}"/>`;
-  // pruned-cell points (fitted range, solid)
+  // original-range fit (solid, over its own domain 29-432)
+  const oy0 = fitOrig.A_intercept_ms + fitOrig.B_slope_ms_per_token*29;
+  const oy1 = fitOrig.A_intercept_ms + fitOrig.B_slope_ms_per_token*432;
+  c += `<line class="fit-line" stroke-dasharray="none" x1="${xPix(29)}" y1="${yPix(oy0)}" x2="${xPix(432)}" y2="${yPix(oy1)}" stroke="${c1}"/>`;
+  // original fit extrapolated to 576 (dashed continuation)
+  const oy576 = fitOrig.A_intercept_ms + fitOrig.B_slope_ms_per_token*576;
+  c += `<line class="fit-line" x1="${xPix(432)}" y1="${yPix(oy1)}" x2="${xPix(576)}" y2="${yPix(oy576)}" stroke="${c1}"/>`;
+  // extended fit (full range, dashed, orange)
+  const ey0 = fit.A_intercept_ms + fit.B_slope_ms_per_token*0;
+  const ey1 = fit.A_intercept_ms + fit.B_slope_ms_per_token*576;
+  c += `<line class="fit-line" x1="${xPix(0)}" y1="${yPix(ey0)}" x2="${xPix(576)}" y2="${yPix(ey1)}" stroke="${c3}"/>`;
+  // all pruned points, colored by whether they're in the original or extended-only range
   fit.points_K.forEach((k,i) => {
+    const isOriginal = k >= 29;
+    const color = isOriginal ? c1 : cCrit;
     const xp=xPix(k), yp=yPix(fit.points_encode_ms[i]);
-    c += `<circle class="dot" cx="${xp}" cy="${yp}" r="4" fill="${c1}"/>`;
+    c += `<circle class="dot" cx="${xp}" cy="${yp}" r="4" fill="${color}"/>`;
     c += `<circle class="dot-hit" data-tip="K=${k}: ${fit.points_encode_ms[i].toFixed(1)}ms measured" cx="${xp}" cy="${yp}" r="10"/>`;
   });
-  // keep=1.0 measured point (orange, off the fit)
+  // keep=1.0 measured point
   const xp1 = xPix(576), yp1 = yPix(fit.measured_encode_ms_at_keep1);
   c += `<circle class="dot" cx="${xp1}" cy="${yp1}" r="5" fill="${c3}"/>`;
   c += `<circle class="dot-hit" data-tip="keep=1.0 (measured, unpruned path): ${fit.measured_encode_ms_at_keep1.toFixed(1)}ms" cx="${xp1}" cy="${yp1}" r="11"/>`;
-  c += `<text class="direct-label" x="${xp1+10}" y="${yp1+4}" fill="${c3}">measured keep=1.0</text>`;
-  // extrapolated fit point at K=576
-  const xp2 = xPix(576), yp2 = yPix(fy1);
-  c += `<circle class="dot" cx="${xp2}" cy="${yp2}" r="5" fill="none" stroke="${c3}" stroke-width="2"/>`;
-  c += `<circle class="dot-hit" data-tip="fit extrapolated to K=576: ${fy1.toFixed(1)}ms" cx="${xp2}" cy="${yp2}" r="11"/>`;
-  c += `<text class="direct-label" x="${xp2+10}" y="${yp2-8}" fill="${c3}">fit&rarr;K=576</text>`;
+  c += `<text class="direct-label" x="${xp1+10}" y="${yp1+16}" fill="${c3}">measured keep=1.0</text>`;
   svg.innerHTML = c;
   attachTooltip(svg);
 
   document.getElementById('fit-footnote').innerHTML =
-    `Fit over pruned cells only (keep&lt;1.0, K=29..432): A=${fit.A_intercept_ms.toFixed(1)}ms, ` +
-    `B=${fit.B_slope_ms_per_token.toFixed(4)}ms/token, R²=${fit.r_squared.toFixed(4)}, ` +
-    `max|residual|=${fit.residual_max_abs_ms.toFixed(2)}ms (tight fit, but extrapolated 144 tokens ` +
-    `beyond the fitted range to reach K=576). Scoring+selection overhead = fit(576) − measured(keep=1.0) ` +
-    `= ${fit.fitted_encode_ms_at_K576.toFixed(1)} − ${fit.measured_encode_ms_at_keep1.toFixed(1)} = ` +
-    `<b>${fit.scoring_selection_overhead_ms.toFixed(1)}ms</b> &mdash; ` +
-    `<b>not distinguishable from zero</b>: the keep=1.0 cell's own run-to-run std (±32ms, vs ±1–6ms ` +
-    `for every pruned cell) is comparable in magnitude to this estimate. Individual keep=1.0 runs drifted ` +
-    `730&rarr;709&rarr;722&rarr;775&rarr;778ms despite the 30s cooldown (load avg rose 2.0&rarr;3.7 over the cell) &mdash; ` +
-    `the most likely explanation is mild residual thermal noise on this specific cell (first in the sweep), ` +
-    `not a real negative-cost effect. Honest reading: the scoring/top-K/gather branch's added cost is small ` +
-    `enough to be lost in single-cell measurement noise at this precision, not precisely quantified as ` +
-    `${Math.abs(fit.scoring_selection_overhead_ms).toFixed(0)}ms in either direction.`;
+    `<b>Original range</b> (blue, K=29-432): A=${fitOrig.A_intercept_ms.toFixed(1)}ms, ` +
+    `B=${fitOrig.B_slope_ms_per_token.toFixed(4)}ms/token, R²=${fitOrig.r_squared.toFixed(4)}, ` +
+    `max|residual|=${fitOrig.residual_max_abs_ms.toFixed(2)}ms &mdash; a tight fit. ` +
+    `<b>Extended to all pruned cells</b> (orange, K=6-432, adds the four new low-K points in red): ` +
+    `A=${fit.A_intercept_ms.toFixed(1)}ms, B=${fit.B_slope_ms_per_token.toFixed(4)}ms/token, ` +
+    `R²=${fit.r_squared.toFixed(4)}, max|residual|=${fit.residual_max_abs_ms.toFixed(2)}ms &mdash; ` +
+    `<b>the fit collapses</b> (R² 0.99 &rarr; 0.15) once K&lt;29 is included; the linear model that worked ` +
+    `excellently over the original range does not extrapolate into the noisy tiny-K regime. Reporting both ` +
+    `rather than silently replacing the good fit. Scoring+selection overhead from the extended fit at K=576: ` +
+    `${fit.fitted_encode_ms_at_K576.toFixed(1)} &minus; ${fit.measured_encode_ms_at_keep1.toFixed(1)} = ` +
+    `<b>${fit.scoring_selection_overhead_ms.toFixed(1)}ms</b> &mdash; given the fit quality at this point, ` +
+    `treat this as unreliable, not a refined estimate; the original range's number (also not distinguishable ` +
+    `from the keep=1.0 cell's own noise) remains the better-grounded read.`;
 })();
 </script>
 </div>
