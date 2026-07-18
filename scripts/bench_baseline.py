@@ -133,21 +133,28 @@ def cpu_env_info() -> dict:
     }
 
 
+def _nvidia_smi_field(field: str) -> str:
+    try:
+        r = subprocess.run(["nvidia-smi", f"--query-gpu={field}", "--format=csv,noheader"],
+                            capture_output=True, text=True, timeout=10)
+        return r.stdout.strip().split("\n")[0].strip() if r.returncode == 0 and r.stdout.strip() else ""
+    except Exception:
+        return ""
+
+
 def gpu_env_info() -> dict:
     """NVIDIA GPU info via nvidia-smi, when present. Returns {} (not a
     guessed/empty-string field set) on every platform without an NVIDIA GPU --
     every platform tagged so far (M4 Pro, GitHub Actions x86) has no GPU, so
-    this is purely additive and does not change their JSON shape."""
-    try:
-        out = subprocess.run(
-            ["nvidia-smi", "--query-gpu=name,memory.total,driver_version,compute_cap",
-             "--format=csv,noheader"],
-            capture_output=True, text=True, timeout=10,
-        )
-        if out.returncode != 0 or not out.stdout.strip():
-            return {}
-        name, mem_total, driver, compute_cap = [s.strip() for s in out.stdout.strip().split("\n")[0].split(",")]
-    except Exception:
+    this is purely additive and does not change their JSON shape.
+
+    Presence (gpu_name) and the richer fields are queried separately, not in
+    one combined --query-gpu=name,memory.total,... call: an older
+    nvidia-smi/driver that doesn't recognize one field name (compute_cap is
+    a relatively recent addition) fails the WHOLE combined query, which
+    would misreport "no GPU" rather than just "one field unavailable"."""
+    name = _nvidia_smi_field("name")
+    if not name:
         return {}
     cuda_toolkit_version = ""
     try:
@@ -158,9 +165,9 @@ def gpu_env_info() -> dict:
         pass
     return {
         "gpu_name": name,
-        "gpu_mem_total": mem_total,
-        "gpu_driver_version": driver,
-        "gpu_compute_capability": compute_cap,
+        "gpu_mem_total": _nvidia_smi_field("memory.total"),
+        "gpu_driver_version": _nvidia_smi_field("driver_version"),
+        "gpu_compute_capability": _nvidia_smi_field("compute_cap"),
         "cuda_toolkit_version": cuda_toolkit_version,
     }
 

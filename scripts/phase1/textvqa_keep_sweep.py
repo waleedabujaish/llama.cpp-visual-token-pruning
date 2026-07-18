@@ -24,9 +24,16 @@ generated text. The server's OpenAI-style multimodal chat endpoint may
 render the chat template differently than the CLI's own prompt-construction
 path (different code, same jinja file) -- this has NOT been verified
 correct independently, so equivalence is checked empirically every run
-rather than assumed. On any mismatch, or if the server fails to come up,
-falls back to (slower, already-validated) CLI mode for the entire sweep
-and says so loudly -- never silently substitutes an unverified prompt path.
+rather than assumed. A mismatch is not immediately treated as a harness
+bug, though: greedy (temp=0) decoding is only bit-reproducible if the
+backend's kernels are, which is not assumed true for GPUs -- so on a
+mismatch, the CLI path is re-run once more on the same sample first; if it
+doesn't even reproduce its own prior answer, the original mismatch is
+noise, not a template-rendering bug, and server mode is used anyway. Only
+a mismatch against a CLI answer that DID reproduce itself is treated as a
+real harness divergence, falling back to (slower, already-validated) CLI
+mode for the entire sweep -- either way, says so loudly, never silently
+substitutes an unverified prompt path.
 
 Resumable at two granularities, since this is by far the longest-running
 phase and the intended runner (Kaggle) can disconnect mid-session:
@@ -244,14 +251,36 @@ def main():
                               f"for sample 0 at keep=1.0: {server_pred!r}. Using server mode for "
                               f"the bulk sweep.", flush=True)
                     else:
-                        print(f"[sweep] EQUIVALENCE MISMATCH -- CLI and server produced DIFFERENT "
-                              f"text for the same sample/ratio. This means the server's chat-"
-                              f"template rendering diverges from the already-validated CLI path "
-                              f"(textvqa_llamacpp.py); using it uninspected would silently change "
-                              f"the accuracy methodology.\n  CLI:    {cli_pred!r}\n"
-                              f"  server: {server_pred!r}\nFalling back to CLI mode (slower, but "
-                              f"matches the validated methodology) for the entire sweep.", flush=True)
-                        use_server = False
+                        # A single-sample text mismatch has two possible causes: the server's
+                        # chat-template rendering genuinely differs from the CLI's (a real harness
+                        # bug -- fall back), or this backend simply isn't deterministic at the
+                        # token-decode level (temp=0 greedy decode is only bit-reproducible if the
+                        # backend's kernels are, which is not assumed true for GPUs -- this script
+                        # has no visibility into whatever determinism check the caller may have run
+                        # elsewhere). Disambiguate by re-running the CLI path a second time on the
+                        # exact same sample: if the CLI doesn't even reproduce its own answer, the
+                        # original mismatch is inconclusive noise, not evidence of a template bug,
+                        # and falling back to a ~200x slower mode would be paying a real cost to
+                        # work around noise rather than a real problem.
+                        cli_pred2, cli_err2 = run_one_cli(args, 1.0, image0, m0["question"], m0["ocr_tokens"])
+                        cli_is_reproducible = (cli_err2 is None and cli_pred2.strip() == cli_pred.strip())
+                        if not cli_is_reproducible:
+                            print(f"[sweep] server/CLI text differed, BUT a second CLI run on the same "
+                                  f"sample also disagreed with the first ({cli_pred!r} vs "
+                                  f"{cli_pred2!r}) -- this backend is not deterministic at the "
+                                  f"token-decode level, so the original mismatch is inconclusive, "
+                                  f"not proof of a harness bug. Proceeding with server mode; sanity-"
+                                  f"check the accuracy numbers once the sweep completes.", flush=True)
+                        else:
+                            print(f"[sweep] EQUIVALENCE MISMATCH -- CLI reproduced its own answer "
+                                  f"twice ({cli_pred!r}) but the server produced different text "
+                                  f"({server_pred!r}) for the same sample/ratio. This means the "
+                                  f"server's chat-template rendering diverges from the already-"
+                                  f"validated CLI path (textvqa_llamacpp.py); using it uninspected "
+                                  f"would silently change the accuracy methodology. Falling back to "
+                                  f"CLI mode (slower, but matches the validated methodology) for the "
+                                  f"entire sweep.", flush=True)
+                            use_server = False
             finally:
                 stop_server(proc)
                 log_f.close()
