@@ -658,3 +658,34 @@ cost since the two quantities differ only by its presence):
   deferred ctypes raw-op-timing tool (Gate 2's future-work item) applied
   to time the scoring branch's ops directly rather than inferring their
   cost from a fit residual.
+
+**Two more findings from the same sweep data, not called out in the
+original summary** (sourced from `results/p2_sweep_report.html`'s embedded
+`DATA` / `results/p2_sweep_analysis.json` - no new runs, both re-verified
+directly from the committed JSON before writing this):
+
+- **Decode speed improves with pruning.** `decode_tok_per_s_mean` rises
+  41.21 -> 50.03 tok/s (+21.4%) from keep=1.0 to keep=0.05, monotonically
+  across every intermediate ratio (44.02 / 45.38 / 47.90 / 49.65 at keep
+  0.75/0.5/0.25/0.1). Mechanism: decode attends the full KV cache at every
+  step, and fewer image tokens occupying that cache means less per-step
+  attention work - a genuine secondary benefit of pruning, distinct from
+  and additional to the TTFT story above. Not something the sweep was
+  designed to measure; it fell out of `decode_tok_per_s`, which was
+  already being captured for sanity.
+- **Peak memory does NOT scale with kept tokens - refutes the
+  plan's prediction.** `peak_footprint_mib_mean` moves only 6659.2 ->
+  6525.5 MiB (-2.0%) despite K dropping 576 -> 29 (-95%). Root cause,
+  visible in the same rows: `kv_buffer_mib` is a **constant 2048.0 MiB
+  across all six cells** - `llama_kv_cache: CPU KV buffer size` is
+  allocated by context-length capacity at context init
+  (`-c`/default n_ctx), not by actual tokens used, so pruning the image
+  tokens fed into that cache doesn't shrink its allocation. The ~2% peak
+  footprint drop that does happen is presumably compute-buffer/activation
+  memory scaling with the smaller prefill batch, not KV. This directly
+  contradicts `vtp-cpu-plan-v2.md`'s prediction that KV/prefix memory
+  would scale ~linearly with kept tokens as "a clean, unsurprising win" -
+  per the plan's own falsifiability rule, reported as refuted, not
+  glossed over. (Note: I could not locate that exact prediction in the
+  current `vtp-cpu-plan-v2.md` - see that file's own update for the
+  discrepancy.)
