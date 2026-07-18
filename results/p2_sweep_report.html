@@ -88,15 +88,21 @@
 TTFT_llm speedup climbs to <b>5.25&times;</b> at keep=0.05, realizing <b>88&ndash;100%</b>
 of the theoretical ceiling from token-count-linear prefill scaling (H1) &mdash; strong
 support for the CPU-linear-prefill hypothesis, holding across the whole original
-range. <b>Extending the sweep down to keep=0.01 answers H2: TTFT_vlm does turn
-around.</b> Its minimum (mean) is at keep=0.05 (1690ms); every ratio below that is
-higher, not lower &mdash; keep=0.03 jumps to 2566ms (+52%). But at this extreme end
-(K=6&ndash;17 tokens) run-to-run noise explodes (encode_ms std goes from &plusmn;1&ndash;6ms
-in the clean range to &plusmn;65&ndash;117ms here, with zero thermal-drift signature &mdash;
-load average stayed flat) and best-case individual runs in several of the new cells
-undercut keep=0.05's mean entirely. Read as: a real turnaround, but one whose exact
-location and shape isn't resolved at n=5 in this regime &mdash; see the chart and
-table below for the honest picture, not a single clean number.
+range. <b>Extending the sweep down to keep=0.01: TTFT_vlm's mean stops decreasing
+and gets substantially noisier below keep~0.05</b> (its minimum is at keep=0.05,
+1690ms; every ratio tested below that is higher &mdash; keep=0.03 jumps to 2566ms,
++52%), with thermal/background-load confounds ruled out (load average stayed flat
+throughout, no drift signature). <b>What that rise is caused by is not
+established.</b> H2 as written claims a specific mechanism &mdash; pruning-branch
+overhead exceeding the savings from fewer tokens. An equally live explanation is
+OS-level measurement noise becoming dominant once total runtime drops under ~2s
+(encode_ms std goes from &plusmn;1&ndash;6ms in the clean range to &plusmn;65&ndash;117ms here),
+which would inflate the <i>mean</i> via occasional slow outlier runs with no real
+algorithmic floor underneath. The non-monotonic curve below keep=0.05 (keep=0.03
+sits higher than keep=0.015/0.01 despite <i>more</i> tokens) and best-case
+individual runs undercutting the keep=0.05 mean entirely both lean toward the
+noise-dominance reading, not a clean break-even. Recorded as open, not resolved
+&mdash; the practical conclusion holds either way (see the callout below).
 </p>
 
 <div class="callout crit">
@@ -111,9 +117,10 @@ video game remote"); keep=0.02 produces a hybrid ("two cats&hellip; each with a
 remote control in their paws"); keep=0.015 drops the cats entirely again; keep=0.01
 (6 tokens) breaks completely &mdash; "two photographs&hellip; a black and white image
 of a man standing in a field", content with no relation to the input at all. One
-image, temp=0, not a systematic eval &mdash; but do not read a compute break-even
-found at keep=0.01&ndash;0.03 as "so prune to 1&ndash;3%": the model's outputs are
-already unreliable well above that range.
+image, temp=0, not a systematic eval &mdash; but regardless of whether the TTFT_vlm
+rise below keep=0.05 turns out to be real overhead or measurement noise, do not
+read it as "so prune to 1&ndash;3%": the model's outputs are already unreliable
+well above that range.
 </div>
 
 <h2>Full results table</h2>
@@ -121,13 +128,13 @@ already unreliable well above that range.
 <table id="results-table"></table>
 </div>
 
-<h2>TTFT breakdown vs keep ratio &mdash; H2: does it turn around?</h2>
+<h2>TTFT breakdown vs keep ratio &mdash; H2: does the mean stop decreasing?</h2>
 <div class="legend">
   <div class="legend-item"><span class="swatch" style="background:var(--series-1)"></span>TTFT_vlm (encoder + prefill)</div>
   <div class="legend-item"><span class="swatch" style="background:var(--series-2)"></span>TTFT_llm (prefill only)</div>
 </div>
 <div class="card"><svg id="chart-ttft" width="900" height="340"></svg></div>
-<div class="footnote">Both curves fall monotonically from keep=1.0 to keep=0.05 (the gap between them is encoder time, nearly flat at 742.8ms &rarr; 660.4ms, while TTFT_llm drops 5407ms &rarr; 1030ms) &mdash; <b>then TTFT_vlm turns around</b> at keep=0.03 and stays above the keep=0.05 floor through keep=0.01. Thin vertical whiskers show each cell's observed min&ndash;max across 5 runs: tight everywhere above keep=0.05, wide below it &mdash; the turnaround in the mean is real and repeated across 4 independent cells, but individual best-case runs at keep=0.02/0.01 undercut the keep=0.05 mean, so treat the exact shape below keep=0.05 as noisy, not a clean curve.</div>
+<div class="footnote">Both curves fall monotonically from keep=1.0 to keep=0.05 (the gap between them is encoder time, nearly flat at 742.8ms &rarr; 660.4ms, while TTFT_llm drops 5407ms &rarr; 1030ms) &mdash; <b>then TTFT_vlm's mean stops decreasing and gets noisier</b> at keep=0.03 and below, staying above the keep=0.05 floor through keep=0.01. Thin vertical whiskers show each cell's observed min&ndash;max across 5 runs: tight everywhere above keep=0.05, wide below it. Whether this reflects genuine pruning-overhead-exceeds-savings or OS-level measurement noise dominating once runtime drops under ~2s is unresolved: the non-monotonic shape below keep=0.05 and best-case individual runs undercutting the keep=0.05 mean both lean toward noise-dominance, not a clean algorithmic floor.</div>
 
 <h2>Speedup vs theoretical ceiling (H1)</h2>
 <div class="legend">
