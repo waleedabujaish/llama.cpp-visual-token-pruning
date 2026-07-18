@@ -1,0 +1,1481 @@
+# argv: /kaggle/working/llama.cpp-prune/build/bin/llama-mtmd-cli -m /kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf --mmproj /kaggle/working/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf --image /kaggle/working/vision_tokens/assets/coco_val2017_000000039769.jpg -p Describe the image in detail. -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v --visual-keep 1.0 --visual-prune-method cls -ngl 999
+# exit: 0
+# wall_s: 4.170
+# --- stdout ---
+
+ The image features a couch with two cats lying on it. One cat is positioned on the left side of the couch, while the other cat
+
+
+# --- stderr ---
+0.00.020.484 I cmn  common_init_: fitting params to device memory ...
+0.00.020.492 I cmn  common_init_: (for bugs during this step try to reproduce them with -fit off, or provide --verbose logs if the bug only occurs with -fit on)
+0.00.020.497 I common_params_fit_impl: getting device memory data for initial parameters:
+0.00.029.635 I llama_model_loader: loaded meta data with 21 key-value pairs and 291 tensors from /kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf (version GGUF V3 (latest))
+0.00.029.661 I llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+0.00.029.669 I llama_model_loader: - kv   0:                       general.architecture str              = llama
+0.00.029.671 I llama_model_loader: - kv   1:                               general.name str              = LLaMA v2
+0.00.029.674 I llama_model_loader: - kv   2:                       llama.context_length u32              = 4096
+0.00.029.675 I llama_model_loader: - kv   3:                     llama.embedding_length u32              = 4096
+0.00.029.676 I llama_model_loader: - kv   4:                          llama.block_count u32              = 32
+0.00.029.677 I llama_model_loader: - kv   5:                  llama.feed_forward_length u32              = 11008
+0.00.029.678 I llama_model_loader: - kv   6:                 llama.rope.dimension_count u32              = 128
+0.00.029.678 I llama_model_loader: - kv   7:                 llama.attention.head_count u32              = 32
+0.00.029.679 I llama_model_loader: - kv   8:              llama.attention.head_count_kv u32              = 32
+0.00.029.683 I llama_model_loader: - kv   9:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+0.00.029.684 I llama_model_loader: - kv  10:                          general.file_type u32              = 15
+0.00.029.685 I llama_model_loader: - kv  11:                       tokenizer.ggml.model str              = llama
+0.00.034.290 I llama_model_loader: - kv  12:                      tokenizer.ggml.tokens arr[str,32000]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+0.00.051.240 I llama_model_loader: - kv  13:                      tokenizer.ggml.scores arr[f32,32000]   = [0.000000, 0.000000, 0.000000, 0.0000...
+0.00.052.530 I llama_model_loader: - kv  14:                  tokenizer.ggml.token_type arr[i32,32000]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+0.00.052.539 I llama_model_loader: - kv  15:                tokenizer.ggml.bos_token_id u32              = 1
+0.00.052.540 I llama_model_loader: - kv  16:                tokenizer.ggml.eos_token_id u32              = 2
+0.00.052.540 I llama_model_loader: - kv  17:            tokenizer.ggml.padding_token_id u32              = 0
+0.00.052.541 I llama_model_loader: - kv  18:               tokenizer.ggml.add_bos_token bool             = true
+0.00.052.542 I llama_model_loader: - kv  19:               tokenizer.ggml.add_eos_token bool             = false
+0.00.052.543 I llama_model_loader: - kv  20:               general.quantization_version u32              = 2
+0.00.052.546 I llama_model_loader: - type  f32:   65 tensors
+0.00.052.547 I llama_model_loader: - type q4_K:  193 tensors
+0.00.052.547 I llama_model_loader: - type q6_K:   33 tensors
+0.00.052.550 I print_info: file format = GGUF V3 (latest)
+0.00.052.552 I print_info: file type   = Q4_K - Medium
+0.00.052.554 I print_info: file size   = 3.80 GiB (4.84 BPW) 
+0.00.130.571 I llama_prepare_model_devices: using device CUDA0 (Tesla P100-PCIE-16GB) (0000:00:04.0) - 16011 MiB free
+0.00.138.281 D init_tokenizer: initializing tokenizer for type 1
+0.00.150.494 I load: 0 unused tokens
+0.00.155.675 D load: control token:      1 '<s>' is not marked as EOG
+0.00.157.145 I load: printing all EOG tokens:
+0.00.157.153 I load:   - 2 ('</s>')
+0.00.157.238 I load: special tokens cache size = 3
+0.00.160.888 I load: token to piece cache size = 0.1684 MB
+0.00.160.910 I print_info: arch                  = llama
+0.00.160.911 I print_info: vocab_only            = 0
+0.00.160.911 I print_info: no_alloc              = 1
+0.00.160.912 I print_info: n_ctx_train           = 4096
+0.00.160.913 I print_info: n_embd_inp            = 4096
+0.00.160.913 I print_info: n_embd                = 4096
+0.00.160.915 I print_info: n_embd_out            = 4096
+0.00.160.916 I print_info: n_layer               = 32
+0.00.160.916 I print_info: n_layer_all           = 32
+0.00.160.945 I print_info: n_head                = 32
+0.00.160.947 I print_info: n_head_kv             = 32
+0.00.160.948 I print_info: n_rot                 = 128
+0.00.160.949 I print_info: n_swa                 = 0
+0.00.160.951 I print_info: is_swa_any            = 0
+0.00.160.951 I print_info: n_embd_head_k         = 128
+0.00.160.951 I print_info: n_embd_head_v         = 128
+0.00.160.953 I print_info: n_gqa                 = 1
+0.00.160.958 I print_info: n_embd_k_gqa          = 4096
+0.00.160.961 I print_info: n_embd_v_gqa          = 4096
+0.00.160.963 I print_info: f_norm_eps            = 0.0e+00
+0.00.160.964 I print_info: f_norm_rms_eps        = 1.0e-05
+0.00.160.964 I print_info: f_clamp_kqv           = 0.0e+00
+0.00.160.965 I print_info: f_max_alibi_bias      = 0.0e+00
+0.00.160.965 I print_info: f_logit_scale         = 0.0e+00
+0.00.160.966 I print_info: f_attn_scale          = 0.0e+00
+0.00.160.966 I print_info: f_attn_value_scale    = 0.0000
+0.00.160.968 I print_info: n_ff                  = 11008
+0.00.160.969 I print_info: n_expert              = 0
+0.00.160.969 I print_info: n_expert_used         = 0
+0.00.160.970 I print_info: n_expert_groups       = 0
+0.00.160.970 I print_info: n_group_used          = 0
+0.00.160.971 I print_info: causal attn           = 1
+0.00.160.971 I print_info: pooling type          = -1
+0.00.160.972 I print_info: rope type             = 0
+0.00.160.972 I print_info: rope scaling          = linear
+0.00.160.974 I print_info: freq_base_train       = 10000.0
+0.00.160.974 I print_info: freq_scale_train      = 1
+0.00.160.975 I print_info: n_ctx_orig_yarn       = 4096
+0.00.160.976 I print_info: rope_yarn_log_mul     = 0.0000
+0.00.160.976 I print_info: rope_finetuned        = unknown
+0.00.160.977 I print_info: model type            = 7B
+0.00.160.978 I print_info: model params          = 6.74 B
+0.00.160.978 I print_info: general.name          = LLaMA v2
+0.00.160.982 I print_info: vocab type            = SPM
+0.00.160.984 I print_info: n_vocab               = 32000
+0.00.160.984 I print_info: n_merges              = 0
+0.00.160.985 I print_info: BOS token             = 1 '<s>'
+0.00.160.985 I print_info: EOS token             = 2 '</s>'
+0.00.160.986 I print_info: UNK token             = 0 '<unk>'
+0.00.160.986 I print_info: PAD token             = 0 '<unk>'
+0.00.160.987 I print_info: LF token              = 13 '<0x0A>'
+0.00.160.987 I print_info: EOG token             = 2 '</s>'
+0.00.160.988 I print_info: max token length      = 48
+0.00.160.990 I load_tensors: loading model tensors, this can take a while... (mmap = false, direct_io = false)
+0.00.161.700 D load_tensors: layer   0 assigned to device CUDA0, is_swa = 0
+0.00.161.707 D load_tensors: layer   1 assigned to device CUDA0, is_swa = 0
+0.00.161.707 D load_tensors: layer   2 assigned to device CUDA0, is_swa = 0
+0.00.161.708 D load_tensors: layer   3 assigned to device CUDA0, is_swa = 0
+0.00.161.708 D load_tensors: layer   4 assigned to device CUDA0, is_swa = 0
+0.00.161.709 D load_tensors: layer   5 assigned to device CUDA0, is_swa = 0
+0.00.161.709 D load_tensors: layer   6 assigned to device CUDA0, is_swa = 0
+0.00.161.710 D load_tensors: layer   7 assigned to device CUDA0, is_swa = 0
+0.00.161.710 D load_tensors: layer   8 assigned to device CUDA0, is_swa = 0
+0.00.161.711 D load_tensors: layer   9 assigned to device CUDA0, is_swa = 0
+0.00.161.711 D load_tensors: layer  10 assigned to device CUDA0, is_swa = 0
+0.00.161.712 D load_tensors: layer  11 assigned to device CUDA0, is_swa = 0
+0.00.161.712 D load_tensors: layer  12 assigned to device CUDA0, is_swa = 0
+0.00.161.713 D load_tensors: layer  13 assigned to device CUDA0, is_swa = 0
+0.00.161.713 D load_tensors: layer  14 assigned to device CUDA0, is_swa = 0
+0.00.161.714 D load_tensors: layer  15 assigned to device CUDA0, is_swa = 0
+0.00.161.714 D load_tensors: layer  16 assigned to device CUDA0, is_swa = 0
+0.00.161.715 D load_tensors: layer  17 assigned to device CUDA0, is_swa = 0
+0.00.161.715 D load_tensors: layer  18 assigned to device CUDA0, is_swa = 0
+0.00.161.716 D load_tensors: layer  19 assigned to device CUDA0, is_swa = 0
+0.00.161.716 D load_tensors: layer  20 assigned to device CUDA0, is_swa = 0
+0.00.161.716 D load_tensors: layer  21 assigned to device CUDA0, is_swa = 0
+0.00.161.717 D load_tensors: layer  22 assigned to device CUDA0, is_swa = 0
+0.00.161.717 D load_tensors: layer  23 assigned to device CUDA0, is_swa = 0
+0.00.161.718 D load_tensors: layer  24 assigned to device CUDA0, is_swa = 0
+0.00.161.718 D load_tensors: layer  25 assigned to device CUDA0, is_swa = 0
+0.00.161.718 D load_tensors: layer  26 assigned to device CUDA0, is_swa = 0
+0.00.161.719 D load_tensors: layer  27 assigned to device CUDA0, is_swa = 0
+0.00.161.719 D load_tensors: layer  28 assigned to device CUDA0, is_swa = 0
+0.00.161.720 D load_tensors: layer  29 assigned to device CUDA0, is_swa = 0
+0.00.161.720 D load_tensors: layer  30 assigned to device CUDA0, is_swa = 0
+0.00.161.721 D load_tensors: layer  31 assigned to device CUDA0, is_swa = 0
+0.00.161.722 D load_tensors: layer  32 assigned to device CUDA0, is_swa = 0
+0.00.161.877 D create_tensor: loading tensor token_embd.weight
+0.00.161.930 D create_tensor: loading tensor output_norm.weight
+0.00.161.954 D create_tensor: loading tensor output.weight
+0.00.161.968 D create_tensor: loading tensor blk.0.attn_norm.weight
+0.00.161.993 D create_tensor: loading tensor blk.0.attn_q.weight
+0.00.162.029 D create_tensor: loading tensor blk.0.attn_k.weight
+0.00.162.051 D create_tensor: loading tensor blk.0.attn_v.weight
+0.00.162.078 D create_tensor: loading tensor blk.0.attn_output.weight
+0.00.162.123 D create_tensor: loading tensor blk.0.ffn_norm.weight
+0.00.162.147 D create_tensor: loading tensor blk.0.ffn_gate.weight
+0.00.162.171 D create_tensor: loading tensor blk.0.ffn_down.weight
+0.00.162.189 D create_tensor: loading tensor blk.0.ffn_up.weight
+0.00.162.224 D create_tensor: loading tensor blk.1.attn_norm.weight
+0.00.162.247 D create_tensor: loading tensor blk.1.attn_q.weight
+0.00.162.266 D create_tensor: loading tensor blk.1.attn_k.weight
+0.00.162.286 D create_tensor: loading tensor blk.1.attn_v.weight
+0.00.162.319 D create_tensor: loading tensor blk.1.attn_output.weight
+0.00.162.341 D create_tensor: loading tensor blk.1.ffn_norm.weight
+0.00.162.364 D create_tensor: loading tensor blk.1.ffn_gate.weight
+0.00.162.383 D create_tensor: loading tensor blk.1.ffn_down.weight
+0.00.162.402 D create_tensor: loading tensor blk.1.ffn_up.weight
+0.00.162.454 D create_tensor: loading tensor blk.2.attn_norm.weight
+0.00.162.479 D create_tensor: loading tensor blk.2.attn_q.weight
+0.00.162.498 D create_tensor: loading tensor blk.2.attn_k.weight
+0.00.162.518 D create_tensor: loading tensor blk.2.attn_v.weight
+0.00.162.557 D create_tensor: loading tensor blk.2.attn_output.weight
+0.00.162.580 D create_tensor: loading tensor blk.2.ffn_norm.weight
+0.00.162.602 D create_tensor: loading tensor blk.2.ffn_gate.weight
+0.00.162.621 D create_tensor: loading tensor blk.2.ffn_down.weight
+0.00.162.641 D create_tensor: loading tensor blk.2.ffn_up.weight
+0.00.162.674 D create_tensor: loading tensor blk.3.attn_norm.weight
+0.00.162.697 D create_tensor: loading tensor blk.3.attn_q.weight
+0.00.162.721 D create_tensor: loading tensor blk.3.attn_k.weight
+0.00.162.739 D create_tensor: loading tensor blk.3.attn_v.weight
+0.00.162.773 D create_tensor: loading tensor blk.3.attn_output.weight
+0.00.162.795 D create_tensor: loading tensor blk.3.ffn_norm.weight
+0.00.162.817 D create_tensor: loading tensor blk.3.ffn_gate.weight
+0.00.162.836 D create_tensor: loading tensor blk.3.ffn_down.weight
+0.00.162.856 D create_tensor: loading tensor blk.3.ffn_up.weight
+0.00.162.889 D create_tensor: loading tensor blk.4.attn_norm.weight
+0.00.162.912 D create_tensor: loading tensor blk.4.attn_q.weight
+0.00.162.933 D create_tensor: loading tensor blk.4.attn_k.weight
+0.00.162.952 D create_tensor: loading tensor blk.4.attn_v.weight
+0.00.162.988 D create_tensor: loading tensor blk.4.attn_output.weight
+0.00.163.011 D create_tensor: loading tensor blk.4.ffn_norm.weight
+0.00.163.032 D create_tensor: loading tensor blk.4.ffn_gate.weight
+0.00.163.051 D create_tensor: loading tensor blk.4.ffn_down.weight
+0.00.163.071 D create_tensor: loading tensor blk.4.ffn_up.weight
+0.00.163.109 D create_tensor: loading tensor blk.5.attn_norm.weight
+0.00.163.132 D create_tensor: loading tensor blk.5.attn_q.weight
+0.00.163.150 D create_tensor: loading tensor blk.5.attn_k.weight
+0.00.163.170 D create_tensor: loading tensor blk.5.attn_v.weight
+0.00.163.209 D create_tensor: loading tensor blk.5.attn_output.weight
+0.00.163.233 D create_tensor: loading tensor blk.5.ffn_norm.weight
+0.00.163.260 D create_tensor: loading tensor blk.5.ffn_gate.weight
+0.00.163.277 D create_tensor: loading tensor blk.5.ffn_down.weight
+0.00.163.300 D create_tensor: loading tensor blk.5.ffn_up.weight
+0.00.163.333 D create_tensor: loading tensor blk.6.attn_norm.weight
+0.00.163.356 D create_tensor: loading tensor blk.6.attn_q.weight
+0.00.163.376 D create_tensor: loading tensor blk.6.attn_k.weight
+0.00.163.394 D create_tensor: loading tensor blk.6.attn_v.weight
+0.00.163.426 D create_tensor: loading tensor blk.6.attn_output.weight
+0.00.163.455 D create_tensor: loading tensor blk.6.ffn_norm.weight
+0.00.163.466 D create_tensor: loading tensor blk.6.ffn_gate.weight
+0.00.163.475 D create_tensor: loading tensor blk.6.ffn_down.weight
+0.00.163.488 D create_tensor: loading tensor blk.6.ffn_up.weight
+0.00.163.507 D create_tensor: loading tensor blk.7.attn_norm.weight
+0.00.163.526 D create_tensor: loading tensor blk.7.attn_q.weight
+0.00.163.540 D create_tensor: loading tensor blk.7.attn_k.weight
+0.00.163.549 D create_tensor: loading tensor blk.7.attn_v.weight
+0.00.163.573 D create_tensor: loading tensor blk.7.attn_output.weight
+0.00.163.586 D create_tensor: loading tensor blk.7.ffn_norm.weight
+0.00.163.604 D create_tensor: loading tensor blk.7.ffn_gate.weight
+0.00.163.614 D create_tensor: loading tensor blk.7.ffn_down.weight
+0.00.163.623 D create_tensor: loading tensor blk.7.ffn_up.weight
+0.00.163.648 D create_tensor: loading tensor blk.8.attn_norm.weight
+0.00.163.671 D create_tensor: loading tensor blk.8.attn_q.weight
+0.00.163.687 D create_tensor: loading tensor blk.8.attn_k.weight
+0.00.163.697 D create_tensor: loading tensor blk.8.attn_v.weight
+0.00.163.716 D create_tensor: loading tensor blk.8.attn_output.weight
+0.00.163.734 D create_tensor: loading tensor blk.8.ffn_norm.weight
+0.00.163.751 D create_tensor: loading tensor blk.8.ffn_gate.weight
+0.00.163.767 D create_tensor: loading tensor blk.8.ffn_down.weight
+0.00.163.777 D create_tensor: loading tensor blk.8.ffn_up.weight
+0.00.163.806 D create_tensor: loading tensor blk.9.attn_norm.weight
+0.00.163.824 D create_tensor: loading tensor blk.9.attn_q.weight
+0.00.163.833 D create_tensor: loading tensor blk.9.attn_k.weight
+0.00.163.853 D create_tensor: loading tensor blk.9.attn_v.weight
+0.00.163.876 D create_tensor: loading tensor blk.9.attn_output.weight
+0.00.163.897 D create_tensor: loading tensor blk.9.ffn_norm.weight
+0.00.163.916 D create_tensor: loading tensor blk.9.ffn_gate.weight
+0.00.163.928 D create_tensor: loading tensor blk.9.ffn_down.weight
+0.00.163.947 D create_tensor: loading tensor blk.9.ffn_up.weight
+0.00.163.963 D create_tensor: loading tensor blk.10.attn_norm.weight
+0.00.163.976 D create_tensor: loading tensor blk.10.attn_q.weight
+0.00.163.982 D create_tensor: loading tensor blk.10.attn_k.weight
+0.00.163.988 D create_tensor: loading tensor blk.10.attn_v.weight
+0.00.164.001 D create_tensor: loading tensor blk.10.attn_output.weight
+0.00.164.013 D create_tensor: loading tensor blk.10.ffn_norm.weight
+0.00.164.024 D create_tensor: loading tensor blk.10.ffn_gate.weight
+0.00.164.031 D create_tensor: loading tensor blk.10.ffn_down.weight
+0.00.164.037 D create_tensor: loading tensor blk.10.ffn_up.weight
+0.00.164.050 D create_tensor: loading tensor blk.11.attn_norm.weight
+0.00.164.062 D create_tensor: loading tensor blk.11.attn_q.weight
+0.00.164.069 D create_tensor: loading tensor blk.11.attn_k.weight
+0.00.164.075 D create_tensor: loading tensor blk.11.attn_v.weight
+0.00.164.092 D create_tensor: loading tensor blk.11.attn_output.weight
+0.00.164.104 D create_tensor: loading tensor blk.11.ffn_norm.weight
+0.00.164.112 D create_tensor: loading tensor blk.11.ffn_gate.weight
+0.00.164.118 D create_tensor: loading tensor blk.11.ffn_down.weight
+0.00.164.127 D create_tensor: loading tensor blk.11.ffn_up.weight
+0.00.164.151 D create_tensor: loading tensor blk.12.attn_norm.weight
+0.00.164.163 D create_tensor: loading tensor blk.12.attn_q.weight
+0.00.164.170 D create_tensor: loading tensor blk.12.attn_k.weight
+0.00.164.176 D create_tensor: loading tensor blk.12.attn_v.weight
+0.00.164.189 D create_tensor: loading tensor blk.12.attn_output.weight
+0.00.164.198 D create_tensor: loading tensor blk.12.ffn_norm.weight
+0.00.164.210 D create_tensor: loading tensor blk.12.ffn_gate.weight
+0.00.164.216 D create_tensor: loading tensor blk.12.ffn_down.weight
+0.00.164.222 D create_tensor: loading tensor blk.12.ffn_up.weight
+0.00.164.235 D create_tensor: loading tensor blk.13.attn_norm.weight
+0.00.164.250 D create_tensor: loading tensor blk.13.attn_q.weight
+0.00.164.256 D create_tensor: loading tensor blk.13.attn_k.weight
+0.00.164.262 D create_tensor: loading tensor blk.13.attn_v.weight
+0.00.164.275 D create_tensor: loading tensor blk.13.attn_output.weight
+0.00.164.287 D create_tensor: loading tensor blk.13.ffn_norm.weight
+0.00.164.294 D create_tensor: loading tensor blk.13.ffn_gate.weight
+0.00.164.301 D create_tensor: loading tensor blk.13.ffn_down.weight
+0.00.164.307 D create_tensor: loading tensor blk.13.ffn_up.weight
+0.00.164.320 D create_tensor: loading tensor blk.14.attn_norm.weight
+0.00.164.333 D create_tensor: loading tensor blk.14.attn_q.weight
+0.00.164.354 D create_tensor: loading tensor blk.14.attn_k.weight
+0.00.164.365 D create_tensor: loading tensor blk.14.attn_v.weight
+0.00.164.378 D create_tensor: loading tensor blk.14.attn_output.weight
+0.00.164.390 D create_tensor: loading tensor blk.14.ffn_norm.weight
+0.00.164.398 D create_tensor: loading tensor blk.14.ffn_gate.weight
+0.00.164.422 D create_tensor: loading tensor blk.14.ffn_down.weight
+0.00.164.430 D create_tensor: loading tensor blk.14.ffn_up.weight
+0.00.164.497 D create_tensor: loading tensor blk.15.attn_norm.weight
+0.00.164.511 D create_tensor: loading tensor blk.15.attn_q.weight
+0.00.164.519 D create_tensor: loading tensor blk.15.attn_k.weight
+0.00.164.525 D create_tensor: loading tensor blk.15.attn_v.weight
+0.00.164.540 D create_tensor: loading tensor blk.15.attn_output.weight
+0.00.164.554 D create_tensor: loading tensor blk.15.ffn_norm.weight
+0.00.164.563 D create_tensor: loading tensor blk.15.ffn_gate.weight
+0.00.164.572 D create_tensor: loading tensor blk.15.ffn_down.weight
+0.00.164.581 D create_tensor: loading tensor blk.15.ffn_up.weight
+0.00.164.599 D create_tensor: loading tensor blk.16.attn_norm.weight
+0.00.164.614 D create_tensor: loading tensor blk.16.attn_q.weight
+0.00.164.621 D create_tensor: loading tensor blk.16.attn_k.weight
+0.00.164.628 D create_tensor: loading tensor blk.16.attn_v.weight
+0.00.164.644 D create_tensor: loading tensor blk.16.attn_output.weight
+0.00.164.659 D create_tensor: loading tensor blk.16.ffn_norm.weight
+0.00.164.668 D create_tensor: loading tensor blk.16.ffn_gate.weight
+0.00.164.678 D create_tensor: loading tensor blk.16.ffn_down.weight
+0.00.164.686 D create_tensor: loading tensor blk.16.ffn_up.weight
+0.00.164.704 D create_tensor: loading tensor blk.17.attn_norm.weight
+0.00.164.719 D create_tensor: loading tensor blk.17.attn_q.weight
+0.00.164.726 D create_tensor: loading tensor blk.17.attn_k.weight
+0.00.164.734 D create_tensor: loading tensor blk.17.attn_v.weight
+0.00.164.750 D create_tensor: loading tensor blk.17.attn_output.weight
+0.00.164.764 D create_tensor: loading tensor blk.17.ffn_norm.weight
+0.00.164.773 D create_tensor: loading tensor blk.17.ffn_gate.weight
+0.00.164.781 D create_tensor: loading tensor blk.17.ffn_down.weight
+0.00.164.788 D create_tensor: loading tensor blk.17.ffn_up.weight
+0.00.164.807 D create_tensor: loading tensor blk.18.attn_norm.weight
+0.00.164.822 D create_tensor: loading tensor blk.18.attn_q.weight
+0.00.164.829 D create_tensor: loading tensor blk.18.attn_k.weight
+0.00.164.837 D create_tensor: loading tensor blk.18.attn_v.weight
+0.00.164.852 D create_tensor: loading tensor blk.18.attn_output.weight
+0.00.164.867 D create_tensor: loading tensor blk.18.ffn_norm.weight
+0.00.164.876 D create_tensor: loading tensor blk.18.ffn_gate.weight
+0.00.164.883 D create_tensor: loading tensor blk.18.ffn_down.weight
+0.00.164.891 D create_tensor: loading tensor blk.18.ffn_up.weight
+0.00.164.907 D create_tensor: loading tensor blk.19.attn_norm.weight
+0.00.164.921 D create_tensor: loading tensor blk.19.attn_q.weight
+0.00.164.931 D create_tensor: loading tensor blk.19.attn_k.weight
+0.00.164.939 D create_tensor: loading tensor blk.19.attn_v.weight
+0.00.164.954 D create_tensor: loading tensor blk.19.attn_output.weight
+0.00.164.969 D create_tensor: loading tensor blk.19.ffn_norm.weight
+0.00.164.978 D create_tensor: loading tensor blk.19.ffn_gate.weight
+0.00.164.985 D create_tensor: loading tensor blk.19.ffn_down.weight
+0.00.164.993 D create_tensor: loading tensor blk.19.ffn_up.weight
+0.00.165.009 D create_tensor: loading tensor blk.20.attn_norm.weight
+0.00.165.023 D create_tensor: loading tensor blk.20.attn_q.weight
+0.00.165.031 D create_tensor: loading tensor blk.20.attn_k.weight
+0.00.165.038 D create_tensor: loading tensor blk.20.attn_v.weight
+0.00.165.053 D create_tensor: loading tensor blk.20.attn_output.weight
+0.00.165.074 D create_tensor: loading tensor blk.20.ffn_norm.weight
+0.00.165.097 D create_tensor: loading tensor blk.20.ffn_gate.weight
+0.00.165.109 D create_tensor: loading tensor blk.20.ffn_down.weight
+0.00.165.116 D create_tensor: loading tensor blk.20.ffn_up.weight
+0.00.165.132 D create_tensor: loading tensor blk.21.attn_norm.weight
+0.00.165.149 D create_tensor: loading tensor blk.21.attn_q.weight
+0.00.165.156 D create_tensor: loading tensor blk.21.attn_k.weight
+0.00.165.164 D create_tensor: loading tensor blk.21.attn_v.weight
+0.00.165.179 D create_tensor: loading tensor blk.21.attn_output.weight
+0.00.165.194 D create_tensor: loading tensor blk.21.ffn_norm.weight
+0.00.165.202 D create_tensor: loading tensor blk.21.ffn_gate.weight
+0.00.165.213 D create_tensor: loading tensor blk.21.ffn_down.weight
+0.00.165.224 D create_tensor: loading tensor blk.21.ffn_up.weight
+0.00.165.240 D create_tensor: loading tensor blk.22.attn_norm.weight
+0.00.165.252 D create_tensor: loading tensor blk.22.attn_q.weight
+0.00.165.261 D create_tensor: loading tensor blk.22.attn_k.weight
+0.00.165.269 D create_tensor: loading tensor blk.22.attn_v.weight
+0.00.165.284 D create_tensor: loading tensor blk.22.attn_output.weight
+0.00.165.299 D create_tensor: loading tensor blk.22.ffn_norm.weight
+0.00.165.308 D create_tensor: loading tensor blk.22.ffn_gate.weight
+0.00.165.315 D create_tensor: loading tensor blk.22.ffn_down.weight
+0.00.165.323 D create_tensor: loading tensor blk.22.ffn_up.weight
+0.00.165.341 D create_tensor: loading tensor blk.23.attn_norm.weight
+0.00.165.356 D create_tensor: loading tensor blk.23.attn_q.weight
+0.00.165.363 D create_tensor: loading tensor blk.23.attn_k.weight
+0.00.165.371 D create_tensor: loading tensor blk.23.attn_v.weight
+0.00.165.386 D create_tensor: loading tensor blk.23.attn_output.weight
+0.00.165.401 D create_tensor: loading tensor blk.23.ffn_norm.weight
+0.00.165.410 D create_tensor: loading tensor blk.23.ffn_gate.weight
+0.00.165.418 D create_tensor: loading tensor blk.23.ffn_down.weight
+0.00.165.425 D create_tensor: loading tensor blk.23.ffn_up.weight
+0.00.165.452 D create_tensor: loading tensor blk.24.attn_norm.weight
+0.00.165.467 D create_tensor: loading tensor blk.24.attn_q.weight
+0.00.165.478 D create_tensor: loading tensor blk.24.attn_k.weight
+0.00.165.486 D create_tensor: loading tensor blk.24.attn_v.weight
+0.00.165.503 D create_tensor: loading tensor blk.24.attn_output.weight
+0.00.165.519 D create_tensor: loading tensor blk.24.ffn_norm.weight
+0.00.165.528 D create_tensor: loading tensor blk.24.ffn_gate.weight
+0.00.165.536 D create_tensor: loading tensor blk.24.ffn_down.weight
+0.00.165.558 D create_tensor: loading tensor blk.24.ffn_up.weight
+0.00.165.574 D create_tensor: loading tensor blk.25.attn_norm.weight
+0.00.165.588 D create_tensor: loading tensor blk.25.attn_q.weight
+0.00.165.595 D create_tensor: loading tensor blk.25.attn_k.weight
+0.00.165.616 D create_tensor: loading tensor blk.25.attn_v.weight
+0.00.165.634 D create_tensor: loading tensor blk.25.attn_output.weight
+0.00.165.647 D create_tensor: loading tensor blk.25.ffn_norm.weight
+0.00.165.656 D create_tensor: loading tensor blk.25.ffn_gate.weight
+0.00.165.663 D create_tensor: loading tensor blk.25.ffn_down.weight
+0.00.165.670 D create_tensor: loading tensor blk.25.ffn_up.weight
+0.00.165.685 D create_tensor: loading tensor blk.26.attn_norm.weight
+0.00.165.698 D create_tensor: loading tensor blk.26.attn_q.weight
+0.00.165.705 D create_tensor: loading tensor blk.26.attn_k.weight
+0.00.165.712 D create_tensor: loading tensor blk.26.attn_v.weight
+0.00.165.727 D create_tensor: loading tensor blk.26.attn_output.weight
+0.00.165.740 D create_tensor: loading tensor blk.26.ffn_norm.weight
+0.00.165.751 D create_tensor: loading tensor blk.26.ffn_gate.weight
+0.00.165.758 D create_tensor: loading tensor blk.26.ffn_down.weight
+0.00.165.765 D create_tensor: loading tensor blk.26.ffn_up.weight
+0.00.165.780 D create_tensor: loading tensor blk.27.attn_norm.weight
+0.00.165.793 D create_tensor: loading tensor blk.27.attn_q.weight
+0.00.165.800 D create_tensor: loading tensor blk.27.attn_k.weight
+0.00.165.811 D create_tensor: loading tensor blk.27.attn_v.weight
+0.00.165.826 D create_tensor: loading tensor blk.27.attn_output.weight
+0.00.165.839 D create_tensor: loading tensor blk.27.ffn_norm.weight
+0.00.165.848 D create_tensor: loading tensor blk.27.ffn_gate.weight
+0.00.165.855 D create_tensor: loading tensor blk.27.ffn_down.weight
+0.00.165.865 D create_tensor: loading tensor blk.27.ffn_up.weight
+0.00.165.884 D create_tensor: loading tensor blk.28.attn_norm.weight
+0.00.165.912 D create_tensor: loading tensor blk.28.attn_q.weight
+0.00.165.925 D create_tensor: loading tensor blk.28.attn_k.weight
+0.00.165.933 D create_tensor: loading tensor blk.28.attn_v.weight
+0.00.165.952 D create_tensor: loading tensor blk.28.attn_output.weight
+0.00.165.968 D create_tensor: loading tensor blk.28.ffn_norm.weight
+0.00.165.978 D create_tensor: loading tensor blk.28.ffn_gate.weight
+0.00.165.987 D create_tensor: loading tensor blk.28.ffn_down.weight
+0.00.165.995 D create_tensor: loading tensor blk.28.ffn_up.weight
+0.00.166.017 D create_tensor: loading tensor blk.29.attn_norm.weight
+0.00.166.034 D create_tensor: loading tensor blk.29.attn_q.weight
+0.00.166.046 D create_tensor: loading tensor blk.29.attn_k.weight
+0.00.166.056 D create_tensor: loading tensor blk.29.attn_v.weight
+0.00.166.077 D create_tensor: loading tensor blk.29.attn_output.weight
+0.00.166.098 D create_tensor: loading tensor blk.29.ffn_norm.weight
+0.00.166.108 D create_tensor: loading tensor blk.29.ffn_gate.weight
+0.00.166.122 D create_tensor: loading tensor blk.29.ffn_down.weight
+0.00.166.131 D create_tensor: loading tensor blk.29.ffn_up.weight
+0.00.166.151 D create_tensor: loading tensor blk.30.attn_norm.weight
+0.00.166.168 D create_tensor: loading tensor blk.30.attn_q.weight
+0.00.166.177 D create_tensor: loading tensor blk.30.attn_k.weight
+0.00.166.186 D create_tensor: loading tensor blk.30.attn_v.weight
+0.00.166.208 D create_tensor: loading tensor blk.30.attn_output.weight
+0.00.166.225 D create_tensor: loading tensor blk.30.ffn_norm.weight
+0.00.166.236 D create_tensor: loading tensor blk.30.ffn_gate.weight
+0.00.166.245 D create_tensor: loading tensor blk.30.ffn_down.weight
+0.00.166.256 D create_tensor: loading tensor blk.30.ffn_up.weight
+0.00.166.278 D create_tensor: loading tensor blk.31.attn_norm.weight
+0.00.166.294 D create_tensor: loading tensor blk.31.attn_q.weight
+0.00.166.304 D create_tensor: loading tensor blk.31.attn_k.weight
+0.00.166.313 D create_tensor: loading tensor blk.31.attn_v.weight
+0.00.166.333 D create_tensor: loading tensor blk.31.attn_output.weight
+0.00.166.350 D create_tensor: loading tensor blk.31.ffn_norm.weight
+0.00.166.365 D create_tensor: loading tensor blk.31.ffn_gate.weight
+0.00.166.374 D create_tensor: loading tensor blk.31.ffn_down.weight
+0.00.166.387 D create_tensor: loading tensor blk.31.ffn_up.weight
+0.00.167.670 D done_getting_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type CUDA_Host, using CPU instead
+0.00.168.162 I load_tensors: offloading output layer to GPU
+0.00.168.168 I load_tensors: offloading 31 repeating layers to GPU
+0.00.168.168 I load_tensors: offloaded 33/33 layers to GPU
+0.00.168.176 I load_tensors:          CPU model buffer size =     0.00 MiB
+0.00.168.177 I load_tensors:        CUDA0 model buffer size =     0.00 MiB
+0.00.168.486 I llama_context: constructing llama_context
+0.00.168.499 I llama_context: n_seq_max     = 1
+0.00.168.500 I llama_context: n_ctx         = 4096
+0.00.168.500 I llama_context: n_ctx_seq     = 4096
+0.00.168.501 I llama_context: n_batch       = 2048
+0.00.168.501 I llama_context: n_ubatch      = 1024
+0.00.168.502 I llama_context: causal_attn   = 1
+0.00.168.503 I llama_context: flash_attn    = auto
+0.00.168.504 I llama_context: kv_unified    = false
+0.00.168.505 I llama_context: freq_base     = 10000.0
+0.00.168.506 I llama_context: freq_scale    = 1
+0.00.168.507 I llama_context: n_rs_seq      = 0
+0.00.168.507 I llama_context: n_outputs_max = 2048
+0.00.168.775 D set_abort_callback: call
+0.00.170.050 I llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+0.00.170.126 D llama_kv_cache: layer   0: dev = CUDA0
+0.00.170.147 D llama_kv_cache: layer   1: dev = CUDA0
+0.00.170.150 D llama_kv_cache: layer   2: dev = CUDA0
+0.00.170.153 D llama_kv_cache: layer   3: dev = CUDA0
+0.00.170.154 D llama_kv_cache: layer   4: dev = CUDA0
+0.00.170.156 D llama_kv_cache: layer   5: dev = CUDA0
+0.00.170.158 D llama_kv_cache: layer   6: dev = CUDA0
+0.00.170.159 D llama_kv_cache: layer   7: dev = CUDA0
+0.00.170.161 D llama_kv_cache: layer   8: dev = CUDA0
+0.00.170.163 D llama_kv_cache: layer   9: dev = CUDA0
+0.00.170.164 D llama_kv_cache: layer  10: dev = CUDA0
+0.00.170.166 D llama_kv_cache: layer  11: dev = CUDA0
+0.00.170.168 D llama_kv_cache: layer  12: dev = CUDA0
+0.00.170.169 D llama_kv_cache: layer  13: dev = CUDA0
+0.00.170.172 D llama_kv_cache: layer  14: dev = CUDA0
+0.00.170.173 D llama_kv_cache: layer  15: dev = CUDA0
+0.00.170.175 D llama_kv_cache: layer  16: dev = CUDA0
+0.00.170.177 D llama_kv_cache: layer  17: dev = CUDA0
+0.00.170.178 D llama_kv_cache: layer  18: dev = CUDA0
+0.00.170.180 D llama_kv_cache: layer  19: dev = CUDA0
+0.00.170.181 D llama_kv_cache: layer  20: dev = CUDA0
+0.00.170.183 D llama_kv_cache: layer  21: dev = CUDA0
+0.00.170.184 D llama_kv_cache: layer  22: dev = CUDA0
+0.00.170.187 D llama_kv_cache: layer  23: dev = CUDA0
+0.00.170.190 D llama_kv_cache: layer  24: dev = CUDA0
+0.00.170.191 D llama_kv_cache: layer  25: dev = CUDA0
+0.00.170.193 D llama_kv_cache: layer  26: dev = CUDA0
+0.00.170.194 D llama_kv_cache: layer  27: dev = CUDA0
+0.00.170.196 D llama_kv_cache: layer  28: dev = CUDA0
+0.00.170.198 D llama_kv_cache: layer  29: dev = CUDA0
+0.00.170.200 D llama_kv_cache: layer  30: dev = CUDA0
+0.00.170.201 D llama_kv_cache: layer  31: dev = CUDA0
+0.00.170.206 I llama_kv_cache:      CUDA0 KV buffer size =     0.00 MiB
+0.00.170.221 I llama_kv_cache: size = 2048.00 MiB (  4096 cells,  32 layers,  1/1 seqs), K (f16): 1024.00 MiB, V (f16): 1024.00 MiB
+0.00.170.222 I llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 128
+0.00.170.223 I llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 128
+0.00.170.224 D llama_context: enumerating backends
+0.00.170.347 D llama_context: backend_ptrs.size() = 2
+0.00.170.349 I sched_reserve: reserving ...
+0.00.170.353 D sched_reserve: max_nodes = 2328
+0.00.172.065 D sched_reserve: reserving full memory module
+0.00.172.079 D sched_reserve: worst-case: n_tokens = 1024, n_seqs = 1, n_outputs = 1
+0.00.172.086 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.172.950 D ggml_cuda_graph_set_enabled: disabling CUDA graphs due to GPU architecture
+0.00.173.009 I resolve_fused_ops: Flash Attention enabled
+0.00.173.010 I resolve_fused_ops: resolving fused Gated Delta Net support:
+0.00.173.011 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.173.589 I resolve_fused_ops: fused Gated Delta Net (autoregressive) enabled
+0.00.173.597 D graph_reserve: reserving a graph for ubatch with n_tokens =   16, n_seqs =  1, n_outputs =   16
+0.00.174.114 I resolve_fused_ops: fused Gated Delta Net (chunked) enabled
+0.00.174.120 I resolve_fused_ops: resolving fused Lightning Indexer support:
+0.00.174.121 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.174.689 I resolve_fused_ops: Lightning Indexer enabled
+0.00.174.695 I resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+0.00.174.696 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.175.272 I resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+0.00.175.279 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.175.879 I resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+0.00.175.888 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.176.397 I resolve_fused_ops: fused DeepSeek V4 HC post enabled
+0.00.176.403 D graph_reserve: reserving a graph for ubatch with n_tokens = 1024, n_seqs =  1, n_outputs = 1024
+0.00.177.743 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.00.178.278 D graph_reserve: reserving a graph for ubatch with n_tokens = 1024, n_seqs =  1, n_outputs = 1024
+0.00.178.811 I sched_reserve:      CUDA0 compute buffer size =   185.02 MiB
+0.00.178.819 I sched_reserve:  CUDA_Host compute buffer size =    40.03 MiB
+0.00.178.819 I sched_reserve: graph nodes  = 998
+0.00.178.820 I sched_reserve: graph splits = 2
+0.00.178.822 I sched_reserve: reserve took 8.47 ms, sched copies = 1
+0.00.179.328 I common_memory_breakdown_print: | memory breakdown [MiB]     | total    free    self   model   context   compute    unaccounted |
+0.00.179.335 I common_memory_breakdown_print: |   - CUDA0 (P100-PCIE-16GB) | 16269 = 16011 + (6053 =  3820 +    2048 +     185) +       -5795 |
+0.00.179.335 I common_memory_breakdown_print: |   - Host                   |                   110 =    70 +       0 +      40                |
+0.00.181.717 I common_params_fit_impl: projected to use 6053 MiB of device memory vs. 16011 MiB of free device memory
+0.00.181.727 I common_params_fit_impl: will leave 9957 >= 1024 MiB of free device memory, no changes needed
+0.00.181.729 I common_fit_params: successfully fit params to free device memory
+0.00.181.731 I common_fit_params: fitting params to free memory took 0.16 seconds
+0.00.189.484 I llama_model_loader: loaded meta data with 21 key-value pairs and 291 tensors from /kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf (version GGUF V3 (latest))
+0.00.189.527 I llama_model_loader: Dumping metadata keys/values. Note: KV overrides do not apply in this output.
+0.00.189.531 I llama_model_loader: - kv   0:                       general.architecture str              = llama
+0.00.189.533 I llama_model_loader: - kv   1:                               general.name str              = LLaMA v2
+0.00.189.536 I llama_model_loader: - kv   2:                       llama.context_length u32              = 4096
+0.00.189.537 I llama_model_loader: - kv   3:                     llama.embedding_length u32              = 4096
+0.00.189.539 I llama_model_loader: - kv   4:                          llama.block_count u32              = 32
+0.00.189.541 I llama_model_loader: - kv   5:                  llama.feed_forward_length u32              = 11008
+0.00.189.543 I llama_model_loader: - kv   6:                 llama.rope.dimension_count u32              = 128
+0.00.189.544 I llama_model_loader: - kv   7:                 llama.attention.head_count u32              = 32
+0.00.189.547 I llama_model_loader: - kv   8:              llama.attention.head_count_kv u32              = 32
+0.00.189.552 I llama_model_loader: - kv   9:     llama.attention.layer_norm_rms_epsilon f32              = 0.000010
+0.00.189.554 I llama_model_loader: - kv  10:                          general.file_type u32              = 15
+0.00.189.556 I llama_model_loader: - kv  11:                       tokenizer.ggml.model str              = llama
+0.00.193.828 I llama_model_loader: - kv  12:                      tokenizer.ggml.tokens arr[str,32000]   = ["<unk>", "<s>", "</s>", "<0x00>", "<...
+0.00.210.519 I llama_model_loader: - kv  13:                      tokenizer.ggml.scores arr[f32,32000]   = [0.000000, 0.000000, 0.000000, 0.0000...
+0.00.211.721 I llama_model_loader: - kv  14:                  tokenizer.ggml.token_type arr[i32,32000]   = [2, 3, 3, 6, 6, 6, 6, 6, 6, 6, 6, 6, ...
+0.00.211.743 I llama_model_loader: - kv  15:                tokenizer.ggml.bos_token_id u32              = 1
+0.00.211.745 I llama_model_loader: - kv  16:                tokenizer.ggml.eos_token_id u32              = 2
+0.00.211.747 I llama_model_loader: - kv  17:            tokenizer.ggml.padding_token_id u32              = 0
+0.00.211.750 I llama_model_loader: - kv  18:               tokenizer.ggml.add_bos_token bool             = true
+0.00.211.751 I llama_model_loader: - kv  19:               tokenizer.ggml.add_eos_token bool             = false
+0.00.211.753 I llama_model_loader: - kv  20:               general.quantization_version u32              = 2
+0.00.211.755 I llama_model_loader: - type  f32:   65 tensors
+0.00.211.756 I llama_model_loader: - type q4_K:  193 tensors
+0.00.211.757 I llama_model_loader: - type q6_K:   33 tensors
+0.00.211.760 I print_info: file format = GGUF V3 (latest)
+0.00.211.762 I print_info: file type   = Q4_K - Medium
+0.00.211.765 I print_info: file size   = 3.80 GiB (4.84 BPW) 
+0.00.212.345 I llama_prepare_model_devices: using device CUDA0 (Tesla P100-PCIE-16GB) (0000:00:04.0) - 16011 MiB free
+0.00.217.771 D init_tokenizer: initializing tokenizer for type 1
+0.00.229.497 I load: 0 unused tokens
+0.00.235.137 D load: control token:      1 '<s>' is not marked as EOG
+0.00.236.579 I load: printing all EOG tokens:
+0.00.236.606 I load:   - 2 ('</s>')
+0.00.236.675 I load: special tokens cache size = 3
+0.00.240.239 I load: token to piece cache size = 0.1684 MB
+0.00.240.279 I print_info: arch                  = llama
+0.00.240.280 I print_info: vocab_only            = 0
+0.00.240.281 I print_info: no_alloc              = 0
+0.00.240.283 I print_info: n_ctx_train           = 4096
+0.00.240.286 I print_info: n_embd_inp            = 4096
+0.00.240.286 I print_info: n_embd                = 4096
+0.00.240.291 I print_info: n_embd_out            = 4096
+0.00.240.293 I print_info: n_layer               = 32
+0.00.240.294 I print_info: n_layer_all           = 32
+0.00.240.302 I print_info: n_head                = 32
+0.00.240.306 I print_info: n_head_kv             = 32
+0.00.240.307 I print_info: n_rot                 = 128
+0.00.240.308 I print_info: n_swa                 = 0
+0.00.240.309 I print_info: is_swa_any            = 0
+0.00.240.310 I print_info: n_embd_head_k         = 128
+0.00.240.311 I print_info: n_embd_head_v         = 128
+0.00.240.315 I print_info: n_gqa                 = 1
+0.00.240.319 I print_info: n_embd_k_gqa          = 4096
+0.00.240.322 I print_info: n_embd_v_gqa          = 4096
+0.00.240.325 I print_info: f_norm_eps            = 0.0e+00
+0.00.240.327 I print_info: f_norm_rms_eps        = 1.0e-05
+0.00.240.344 I print_info: f_clamp_kqv           = 0.0e+00
+0.00.240.345 I print_info: f_max_alibi_bias      = 0.0e+00
+0.00.240.346 I print_info: f_logit_scale         = 0.0e+00
+0.00.240.347 I print_info: f_attn_scale          = 0.0e+00
+0.00.240.347 I print_info: f_attn_value_scale    = 0.0000
+0.00.240.351 I print_info: n_ff                  = 11008
+0.00.240.352 I print_info: n_expert              = 0
+0.00.240.353 I print_info: n_expert_used         = 0
+0.00.240.354 I print_info: n_expert_groups       = 0
+0.00.240.355 I print_info: n_group_used          = 0
+0.00.240.356 I print_info: causal attn           = 1
+0.00.240.357 I print_info: pooling type          = -1
+0.00.240.358 I print_info: rope type             = 0
+0.00.240.360 I print_info: rope scaling          = linear
+0.00.240.362 I print_info: freq_base_train       = 10000.0
+0.00.240.364 I print_info: freq_scale_train      = 1
+0.00.240.365 I print_info: n_ctx_orig_yarn       = 4096
+0.00.240.366 I print_info: rope_yarn_log_mul     = 0.0000
+0.00.240.367 I print_info: rope_finetuned        = unknown
+0.00.240.369 I print_info: model type            = 7B
+0.00.240.371 I print_info: model params          = 6.74 B
+0.00.240.372 I print_info: general.name          = LLaMA v2
+0.00.240.375 I print_info: vocab type            = SPM
+0.00.240.376 I print_info: n_vocab               = 32000
+0.00.240.377 I print_info: n_merges              = 0
+0.00.240.378 I print_info: BOS token             = 1 '<s>'
+0.00.240.379 I print_info: EOS token             = 2 '</s>'
+0.00.240.381 I print_info: UNK token             = 0 '<unk>'
+0.00.240.382 I print_info: PAD token             = 0 '<unk>'
+0.00.240.384 I print_info: LF token              = 13 '<0x0A>'
+0.00.240.385 I print_info: EOG token             = 2 '</s>'
+0.00.240.387 I print_info: max token length      = 48
+0.00.240.390 I load_tensors: loading model tensors, this can take a while... (mmap = true, direct_io = false)
+0.00.241.401 D load_tensors: layer   0 assigned to device CUDA0, is_swa = 0
+0.00.241.426 D load_tensors: layer   1 assigned to device CUDA0, is_swa = 0
+0.00.241.428 D load_tensors: layer   2 assigned to device CUDA0, is_swa = 0
+0.00.241.429 D load_tensors: layer   3 assigned to device CUDA0, is_swa = 0
+0.00.241.431 D load_tensors: layer   4 assigned to device CUDA0, is_swa = 0
+0.00.241.431 D load_tensors: layer   5 assigned to device CUDA0, is_swa = 0
+0.00.241.433 D load_tensors: layer   6 assigned to device CUDA0, is_swa = 0
+0.00.241.434 D load_tensors: layer   7 assigned to device CUDA0, is_swa = 0
+0.00.241.436 D load_tensors: layer   8 assigned to device CUDA0, is_swa = 0
+0.00.241.437 D load_tensors: layer   9 assigned to device CUDA0, is_swa = 0
+0.00.241.439 D load_tensors: layer  10 assigned to device CUDA0, is_swa = 0
+0.00.241.440 D load_tensors: layer  11 assigned to device CUDA0, is_swa = 0
+0.00.241.441 D load_tensors: layer  12 assigned to device CUDA0, is_swa = 0
+0.00.241.443 D load_tensors: layer  13 assigned to device CUDA0, is_swa = 0
+0.00.241.444 D load_tensors: layer  14 assigned to device CUDA0, is_swa = 0
+0.00.241.445 D load_tensors: layer  15 assigned to device CUDA0, is_swa = 0
+0.00.241.462 D load_tensors: layer  16 assigned to device CUDA0, is_swa = 0
+0.00.241.463 D load_tensors: layer  17 assigned to device CUDA0, is_swa = 0
+0.00.241.465 D load_tensors: layer  18 assigned to device CUDA0, is_swa = 0
+0.00.241.466 D load_tensors: layer  19 assigned to device CUDA0, is_swa = 0
+0.00.241.467 D load_tensors: layer  20 assigned to device CUDA0, is_swa = 0
+0.00.241.469 D load_tensors: layer  21 assigned to device CUDA0, is_swa = 0
+0.00.241.471 D load_tensors: layer  22 assigned to device CUDA0, is_swa = 0
+0.00.241.472 D load_tensors: layer  23 assigned to device CUDA0, is_swa = 0
+0.00.241.473 D load_tensors: layer  24 assigned to device CUDA0, is_swa = 0
+0.00.241.474 D load_tensors: layer  25 assigned to device CUDA0, is_swa = 0
+0.00.241.476 D load_tensors: layer  26 assigned to device CUDA0, is_swa = 0
+0.00.241.477 D load_tensors: layer  27 assigned to device CUDA0, is_swa = 0
+0.00.241.478 D load_tensors: layer  28 assigned to device CUDA0, is_swa = 0
+0.00.241.480 D load_tensors: layer  29 assigned to device CUDA0, is_swa = 0
+0.00.241.481 D load_tensors: layer  30 assigned to device CUDA0, is_swa = 0
+0.00.241.483 D load_tensors: layer  31 assigned to device CUDA0, is_swa = 0
+0.00.241.484 D load_tensors: layer  32 assigned to device CUDA0, is_swa = 0
+0.00.241.535 D create_tensor: loading tensor token_embd.weight
+0.00.241.567 D create_tensor: loading tensor output_norm.weight
+0.00.241.581 D create_tensor: loading tensor output.weight
+0.00.241.598 D create_tensor: loading tensor blk.0.attn_norm.weight
+0.00.241.637 D create_tensor: loading tensor blk.0.attn_q.weight
+0.00.241.653 D create_tensor: loading tensor blk.0.attn_k.weight
+0.00.241.670 D create_tensor: loading tensor blk.0.attn_v.weight
+0.00.241.710 D create_tensor: loading tensor blk.0.attn_output.weight
+0.00.241.732 D create_tensor: loading tensor blk.0.ffn_norm.weight
+0.00.241.777 D create_tensor: loading tensor blk.0.ffn_gate.weight
+0.00.241.797 D create_tensor: loading tensor blk.0.ffn_down.weight
+0.00.241.818 D create_tensor: loading tensor blk.0.ffn_up.weight
+0.00.241.853 D create_tensor: loading tensor blk.1.attn_norm.weight
+0.00.241.894 D create_tensor: loading tensor blk.1.attn_q.weight
+0.00.241.915 D create_tensor: loading tensor blk.1.attn_k.weight
+0.00.241.936 D create_tensor: loading tensor blk.1.attn_v.weight
+0.00.241.969 D create_tensor: loading tensor blk.1.attn_output.weight
+0.00.241.995 D create_tensor: loading tensor blk.1.ffn_norm.weight
+0.00.242.018 D create_tensor: loading tensor blk.1.ffn_gate.weight
+0.00.242.040 D create_tensor: loading tensor blk.1.ffn_down.weight
+0.00.242.061 D create_tensor: loading tensor blk.1.ffn_up.weight
+0.00.242.099 D create_tensor: loading tensor blk.2.attn_norm.weight
+0.00.242.124 D create_tensor: loading tensor blk.2.attn_q.weight
+0.00.242.147 D create_tensor: loading tensor blk.2.attn_k.weight
+0.00.242.169 D create_tensor: loading tensor blk.2.attn_v.weight
+0.00.242.201 D create_tensor: loading tensor blk.2.attn_output.weight
+0.00.242.226 D create_tensor: loading tensor blk.2.ffn_norm.weight
+0.00.242.250 D create_tensor: loading tensor blk.2.ffn_gate.weight
+0.00.242.271 D create_tensor: loading tensor blk.2.ffn_down.weight
+0.00.242.293 D create_tensor: loading tensor blk.2.ffn_up.weight
+0.00.242.326 D create_tensor: loading tensor blk.3.attn_norm.weight
+0.00.242.350 D create_tensor: loading tensor blk.3.attn_q.weight
+0.00.242.365 D create_tensor: loading tensor blk.3.attn_k.weight
+0.00.242.386 D create_tensor: loading tensor blk.3.attn_v.weight
+0.00.242.420 D create_tensor: loading tensor blk.3.attn_output.weight
+0.00.242.458 D create_tensor: loading tensor blk.3.ffn_norm.weight
+0.00.242.482 D create_tensor: loading tensor blk.3.ffn_gate.weight
+0.00.242.504 D create_tensor: loading tensor blk.3.ffn_down.weight
+0.00.242.525 D create_tensor: loading tensor blk.3.ffn_up.weight
+0.00.242.558 D create_tensor: loading tensor blk.4.attn_norm.weight
+0.00.242.583 D create_tensor: loading tensor blk.4.attn_q.weight
+0.00.242.604 D create_tensor: loading tensor blk.4.attn_k.weight
+0.00.242.625 D create_tensor: loading tensor blk.4.attn_v.weight
+0.00.242.659 D create_tensor: loading tensor blk.4.attn_output.weight
+0.00.242.683 D create_tensor: loading tensor blk.4.ffn_norm.weight
+0.00.242.707 D create_tensor: loading tensor blk.4.ffn_gate.weight
+0.00.242.728 D create_tensor: loading tensor blk.4.ffn_down.weight
+0.00.242.750 D create_tensor: loading tensor blk.4.ffn_up.weight
+0.00.242.778 D create_tensor: loading tensor blk.5.attn_norm.weight
+0.00.242.804 D create_tensor: loading tensor blk.5.attn_q.weight
+0.00.242.825 D create_tensor: loading tensor blk.5.attn_k.weight
+0.00.242.846 D create_tensor: loading tensor blk.5.attn_v.weight
+0.00.242.879 D create_tensor: loading tensor blk.5.attn_output.weight
+0.00.242.903 D create_tensor: loading tensor blk.5.ffn_norm.weight
+0.00.242.928 D create_tensor: loading tensor blk.5.ffn_gate.weight
+0.00.242.949 D create_tensor: loading tensor blk.5.ffn_down.weight
+0.00.242.970 D create_tensor: loading tensor blk.5.ffn_up.weight
+0.00.243.003 D create_tensor: loading tensor blk.6.attn_norm.weight
+0.00.243.028 D create_tensor: loading tensor blk.6.attn_q.weight
+0.00.243.050 D create_tensor: loading tensor blk.6.attn_k.weight
+0.00.243.072 D create_tensor: loading tensor blk.6.attn_v.weight
+0.00.243.110 D create_tensor: loading tensor blk.6.attn_output.weight
+0.00.243.135 D create_tensor: loading tensor blk.6.ffn_norm.weight
+0.00.243.159 D create_tensor: loading tensor blk.6.ffn_gate.weight
+0.00.243.180 D create_tensor: loading tensor blk.6.ffn_down.weight
+0.00.243.201 D create_tensor: loading tensor blk.6.ffn_up.weight
+0.00.243.234 D create_tensor: loading tensor blk.7.attn_norm.weight
+0.00.243.258 D create_tensor: loading tensor blk.7.attn_q.weight
+0.00.243.280 D create_tensor: loading tensor blk.7.attn_k.weight
+0.00.243.301 D create_tensor: loading tensor blk.7.attn_v.weight
+0.00.243.334 D create_tensor: loading tensor blk.7.attn_output.weight
+0.00.243.359 D create_tensor: loading tensor blk.7.ffn_norm.weight
+0.00.243.383 D create_tensor: loading tensor blk.7.ffn_gate.weight
+0.00.243.405 D create_tensor: loading tensor blk.7.ffn_down.weight
+0.00.243.426 D create_tensor: loading tensor blk.7.ffn_up.weight
+0.00.243.471 D create_tensor: loading tensor blk.8.attn_norm.weight
+0.00.243.497 D create_tensor: loading tensor blk.8.attn_q.weight
+0.00.243.519 D create_tensor: loading tensor blk.8.attn_k.weight
+0.00.243.540 D create_tensor: loading tensor blk.8.attn_v.weight
+0.00.243.573 D create_tensor: loading tensor blk.8.attn_output.weight
+0.00.243.598 D create_tensor: loading tensor blk.8.ffn_norm.weight
+0.00.243.621 D create_tensor: loading tensor blk.8.ffn_gate.weight
+0.00.243.643 D create_tensor: loading tensor blk.8.ffn_down.weight
+0.00.243.664 D create_tensor: loading tensor blk.8.ffn_up.weight
+0.00.243.697 D create_tensor: loading tensor blk.9.attn_norm.weight
+0.00.243.721 D create_tensor: loading tensor blk.9.attn_q.weight
+0.00.243.743 D create_tensor: loading tensor blk.9.attn_k.weight
+0.00.243.764 D create_tensor: loading tensor blk.9.attn_v.weight
+0.00.243.797 D create_tensor: loading tensor blk.9.attn_output.weight
+0.00.243.822 D create_tensor: loading tensor blk.9.ffn_norm.weight
+0.00.243.845 D create_tensor: loading tensor blk.9.ffn_gate.weight
+0.00.243.867 D create_tensor: loading tensor blk.9.ffn_down.weight
+0.00.243.889 D create_tensor: loading tensor blk.9.ffn_up.weight
+0.00.243.922 D create_tensor: loading tensor blk.10.attn_norm.weight
+0.00.243.948 D create_tensor: loading tensor blk.10.attn_q.weight
+0.00.243.969 D create_tensor: loading tensor blk.10.attn_k.weight
+0.00.243.990 D create_tensor: loading tensor blk.10.attn_v.weight
+0.00.244.024 D create_tensor: loading tensor blk.10.attn_output.weight
+0.00.244.049 D create_tensor: loading tensor blk.10.ffn_norm.weight
+0.00.244.073 D create_tensor: loading tensor blk.10.ffn_gate.weight
+0.00.244.098 D create_tensor: loading tensor blk.10.ffn_down.weight
+0.00.244.119 D create_tensor: loading tensor blk.10.ffn_up.weight
+0.00.244.153 D create_tensor: loading tensor blk.11.attn_norm.weight
+0.00.244.179 D create_tensor: loading tensor blk.11.attn_q.weight
+0.00.244.200 D create_tensor: loading tensor blk.11.attn_k.weight
+0.00.244.221 D create_tensor: loading tensor blk.11.attn_v.weight
+0.00.244.255 D create_tensor: loading tensor blk.11.attn_output.weight
+0.00.244.281 D create_tensor: loading tensor blk.11.ffn_norm.weight
+0.00.244.304 D create_tensor: loading tensor blk.11.ffn_gate.weight
+0.00.244.326 D create_tensor: loading tensor blk.11.ffn_down.weight
+0.00.244.346 D create_tensor: loading tensor blk.11.ffn_up.weight
+0.00.244.374 D create_tensor: loading tensor blk.12.attn_norm.weight
+0.00.244.399 D create_tensor: loading tensor blk.12.attn_q.weight
+0.00.244.437 D create_tensor: loading tensor blk.12.attn_k.weight
+0.00.244.469 D create_tensor: loading tensor blk.12.attn_v.weight
+0.00.244.508 D create_tensor: loading tensor blk.12.attn_output.weight
+0.00.244.537 D create_tensor: loading tensor blk.12.ffn_norm.weight
+0.00.244.563 D create_tensor: loading tensor blk.12.ffn_gate.weight
+0.00.244.588 D create_tensor: loading tensor blk.12.ffn_down.weight
+0.00.244.612 D create_tensor: loading tensor blk.12.ffn_up.weight
+0.00.244.651 D create_tensor: loading tensor blk.13.attn_norm.weight
+0.00.244.680 D create_tensor: loading tensor blk.13.attn_q.weight
+0.00.244.704 D create_tensor: loading tensor blk.13.attn_k.weight
+0.00.244.728 D create_tensor: loading tensor blk.13.attn_v.weight
+0.00.244.766 D create_tensor: loading tensor blk.13.attn_output.weight
+0.00.244.796 D create_tensor: loading tensor blk.13.ffn_norm.weight
+0.00.244.822 D create_tensor: loading tensor blk.13.ffn_gate.weight
+0.00.244.847 D create_tensor: loading tensor blk.13.ffn_down.weight
+0.00.244.871 D create_tensor: loading tensor blk.13.ffn_up.weight
+0.00.244.910 D create_tensor: loading tensor blk.14.attn_norm.weight
+0.00.244.939 D create_tensor: loading tensor blk.14.attn_q.weight
+0.00.244.964 D create_tensor: loading tensor blk.14.attn_k.weight
+0.00.244.989 D create_tensor: loading tensor blk.14.attn_v.weight
+0.00.245.027 D create_tensor: loading tensor blk.14.attn_output.weight
+0.00.245.057 D create_tensor: loading tensor blk.14.ffn_norm.weight
+0.00.245.088 D create_tensor: loading tensor blk.14.ffn_gate.weight
+0.00.245.113 D create_tensor: loading tensor blk.14.ffn_down.weight
+0.00.245.137 D create_tensor: loading tensor blk.14.ffn_up.weight
+0.00.245.176 D create_tensor: loading tensor blk.15.attn_norm.weight
+0.00.245.204 D create_tensor: loading tensor blk.15.attn_q.weight
+0.00.245.229 D create_tensor: loading tensor blk.15.attn_k.weight
+0.00.245.253 D create_tensor: loading tensor blk.15.attn_v.weight
+0.00.245.291 D create_tensor: loading tensor blk.15.attn_output.weight
+0.00.245.320 D create_tensor: loading tensor blk.15.ffn_norm.weight
+0.00.245.349 D create_tensor: loading tensor blk.15.ffn_gate.weight
+0.00.245.374 D create_tensor: loading tensor blk.15.ffn_down.weight
+0.00.245.399 D create_tensor: loading tensor blk.15.ffn_up.weight
+0.00.245.453 D create_tensor: loading tensor blk.16.attn_norm.weight
+0.00.245.484 D create_tensor: loading tensor blk.16.attn_q.weight
+0.00.245.509 D create_tensor: loading tensor blk.16.attn_k.weight
+0.00.245.535 D create_tensor: loading tensor blk.16.attn_v.weight
+0.00.245.576 D create_tensor: loading tensor blk.16.attn_output.weight
+0.00.245.616 D create_tensor: loading tensor blk.16.ffn_norm.weight
+0.00.245.655 D create_tensor: loading tensor blk.16.ffn_gate.weight
+0.00.245.677 D create_tensor: loading tensor blk.16.ffn_down.weight
+0.00.245.699 D create_tensor: loading tensor blk.16.ffn_up.weight
+0.00.245.735 D create_tensor: loading tensor blk.17.attn_norm.weight
+0.00.245.762 D create_tensor: loading tensor blk.17.attn_q.weight
+0.00.245.784 D create_tensor: loading tensor blk.17.attn_k.weight
+0.00.245.806 D create_tensor: loading tensor blk.17.attn_v.weight
+0.00.245.841 D create_tensor: loading tensor blk.17.attn_output.weight
+0.00.245.868 D create_tensor: loading tensor blk.17.ffn_norm.weight
+0.00.245.892 D create_tensor: loading tensor blk.17.ffn_gate.weight
+0.00.245.914 D create_tensor: loading tensor blk.17.ffn_down.weight
+0.00.245.936 D create_tensor: loading tensor blk.17.ffn_up.weight
+0.00.245.972 D create_tensor: loading tensor blk.18.attn_norm.weight
+0.00.245.998 D create_tensor: loading tensor blk.18.attn_q.weight
+0.00.246.021 D create_tensor: loading tensor blk.18.attn_k.weight
+0.00.246.042 D create_tensor: loading tensor blk.18.attn_v.weight
+0.00.246.078 D create_tensor: loading tensor blk.18.attn_output.weight
+0.00.246.115 D create_tensor: loading tensor blk.18.ffn_norm.weight
+0.00.246.139 D create_tensor: loading tensor blk.18.ffn_gate.weight
+0.00.246.161 D create_tensor: loading tensor blk.18.ffn_down.weight
+0.00.246.184 D create_tensor: loading tensor blk.18.ffn_up.weight
+0.00.246.221 D create_tensor: loading tensor blk.19.attn_norm.weight
+0.00.246.247 D create_tensor: loading tensor blk.19.attn_q.weight
+0.00.246.269 D create_tensor: loading tensor blk.19.attn_k.weight
+0.00.246.291 D create_tensor: loading tensor blk.19.attn_v.weight
+0.00.246.327 D create_tensor: loading tensor blk.19.attn_output.weight
+0.00.246.354 D create_tensor: loading tensor blk.19.ffn_norm.weight
+0.00.246.378 D create_tensor: loading tensor blk.19.ffn_gate.weight
+0.00.246.400 D create_tensor: loading tensor blk.19.ffn_down.weight
+0.00.246.422 D create_tensor: loading tensor blk.19.ffn_up.weight
+0.00.246.469 D create_tensor: loading tensor blk.20.attn_norm.weight
+0.00.246.496 D create_tensor: loading tensor blk.20.attn_q.weight
+0.00.246.518 D create_tensor: loading tensor blk.20.attn_k.weight
+0.00.246.540 D create_tensor: loading tensor blk.20.attn_v.weight
+0.00.246.576 D create_tensor: loading tensor blk.20.attn_output.weight
+0.00.246.602 D create_tensor: loading tensor blk.20.ffn_norm.weight
+0.00.246.627 D create_tensor: loading tensor blk.20.ffn_gate.weight
+0.00.246.650 D create_tensor: loading tensor blk.20.ffn_down.weight
+0.00.246.672 D create_tensor: loading tensor blk.20.ffn_up.weight
+0.00.246.709 D create_tensor: loading tensor blk.21.attn_norm.weight
+0.00.246.736 D create_tensor: loading tensor blk.21.attn_q.weight
+0.00.246.758 D create_tensor: loading tensor blk.21.attn_k.weight
+0.00.246.780 D create_tensor: loading tensor blk.21.attn_v.weight
+0.00.246.815 D create_tensor: loading tensor blk.21.attn_output.weight
+0.00.246.842 D create_tensor: loading tensor blk.21.ffn_norm.weight
+0.00.246.866 D create_tensor: loading tensor blk.21.ffn_gate.weight
+0.00.246.888 D create_tensor: loading tensor blk.21.ffn_down.weight
+0.00.246.910 D create_tensor: loading tensor blk.21.ffn_up.weight
+0.00.246.946 D create_tensor: loading tensor blk.22.attn_norm.weight
+0.00.246.972 D create_tensor: loading tensor blk.22.attn_q.weight
+0.00.246.994 D create_tensor: loading tensor blk.22.attn_k.weight
+0.00.247.016 D create_tensor: loading tensor blk.22.attn_v.weight
+0.00.247.052 D create_tensor: loading tensor blk.22.attn_output.weight
+0.00.247.078 D create_tensor: loading tensor blk.22.ffn_norm.weight
+0.00.247.104 D create_tensor: loading tensor blk.22.ffn_gate.weight
+0.00.247.126 D create_tensor: loading tensor blk.22.ffn_down.weight
+0.00.247.149 D create_tensor: loading tensor blk.22.ffn_up.weight
+0.00.247.185 D create_tensor: loading tensor blk.23.attn_norm.weight
+0.00.247.212 D create_tensor: loading tensor blk.23.attn_q.weight
+0.00.247.234 D create_tensor: loading tensor blk.23.attn_k.weight
+0.00.247.256 D create_tensor: loading tensor blk.23.attn_v.weight
+0.00.247.292 D create_tensor: loading tensor blk.23.attn_output.weight
+0.00.247.318 D create_tensor: loading tensor blk.23.ffn_norm.weight
+0.00.247.343 D create_tensor: loading tensor blk.23.ffn_gate.weight
+0.00.247.366 D create_tensor: loading tensor blk.23.ffn_down.weight
+0.00.247.388 D create_tensor: loading tensor blk.23.ffn_up.weight
+0.00.247.425 D create_tensor: loading tensor blk.24.attn_norm.weight
+0.00.247.461 D create_tensor: loading tensor blk.24.attn_q.weight
+0.00.247.484 D create_tensor: loading tensor blk.24.attn_k.weight
+0.00.247.507 D create_tensor: loading tensor blk.24.attn_v.weight
+0.00.247.545 D create_tensor: loading tensor blk.24.attn_output.weight
+0.00.247.572 D create_tensor: loading tensor blk.24.ffn_norm.weight
+0.00.247.597 D create_tensor: loading tensor blk.24.ffn_gate.weight
+0.00.247.620 D create_tensor: loading tensor blk.24.ffn_down.weight
+0.00.247.642 D create_tensor: loading tensor blk.24.ffn_up.weight
+0.00.247.680 D create_tensor: loading tensor blk.25.attn_norm.weight
+0.00.247.709 D create_tensor: loading tensor blk.25.attn_q.weight
+0.00.247.732 D create_tensor: loading tensor blk.25.attn_k.weight
+0.00.247.755 D create_tensor: loading tensor blk.25.attn_v.weight
+0.00.247.792 D create_tensor: loading tensor blk.25.attn_output.weight
+0.00.247.820 D create_tensor: loading tensor blk.25.ffn_norm.weight
+0.00.247.845 D create_tensor: loading tensor blk.25.ffn_gate.weight
+0.00.247.868 D create_tensor: loading tensor blk.25.ffn_down.weight
+0.00.247.890 D create_tensor: loading tensor blk.25.ffn_up.weight
+0.00.247.928 D create_tensor: loading tensor blk.26.attn_norm.weight
+0.00.247.955 D create_tensor: loading tensor blk.26.attn_q.weight
+0.00.247.978 D create_tensor: loading tensor blk.26.attn_k.weight
+0.00.248.000 D create_tensor: loading tensor blk.26.attn_v.weight
+0.00.248.038 D create_tensor: loading tensor blk.26.attn_output.weight
+0.00.248.066 D create_tensor: loading tensor blk.26.ffn_norm.weight
+0.00.248.096 D create_tensor: loading tensor blk.26.ffn_gate.weight
+0.00.248.118 D create_tensor: loading tensor blk.26.ffn_down.weight
+0.00.248.141 D create_tensor: loading tensor blk.26.ffn_up.weight
+0.00.248.179 D create_tensor: loading tensor blk.27.attn_norm.weight
+0.00.248.206 D create_tensor: loading tensor blk.27.attn_q.weight
+0.00.248.229 D create_tensor: loading tensor blk.27.attn_k.weight
+0.00.248.251 D create_tensor: loading tensor blk.27.attn_v.weight
+0.00.248.288 D create_tensor: loading tensor blk.27.attn_output.weight
+0.00.248.317 D create_tensor: loading tensor blk.27.ffn_norm.weight
+0.00.248.343 D create_tensor: loading tensor blk.27.ffn_gate.weight
+0.00.248.366 D create_tensor: loading tensor blk.27.ffn_down.weight
+0.00.248.388 D create_tensor: loading tensor blk.27.ffn_up.weight
+0.00.248.427 D create_tensor: loading tensor blk.28.attn_norm.weight
+0.00.248.466 D create_tensor: loading tensor blk.28.attn_q.weight
+0.00.248.490 D create_tensor: loading tensor blk.28.attn_k.weight
+0.00.248.513 D create_tensor: loading tensor blk.28.attn_v.weight
+0.00.248.553 D create_tensor: loading tensor blk.28.attn_output.weight
+0.00.248.582 D create_tensor: loading tensor blk.28.ffn_norm.weight
+0.00.248.608 D create_tensor: loading tensor blk.28.ffn_gate.weight
+0.00.248.631 D create_tensor: loading tensor blk.28.ffn_down.weight
+0.00.248.654 D create_tensor: loading tensor blk.28.ffn_up.weight
+0.00.248.694 D create_tensor: loading tensor blk.29.attn_norm.weight
+0.00.248.724 D create_tensor: loading tensor blk.29.attn_q.weight
+0.00.248.748 D create_tensor: loading tensor blk.29.attn_k.weight
+0.00.248.772 D create_tensor: loading tensor blk.29.attn_v.weight
+0.00.248.813 D create_tensor: loading tensor blk.29.attn_output.weight
+0.00.248.844 D create_tensor: loading tensor blk.29.ffn_norm.weight
+0.00.248.871 D create_tensor: loading tensor blk.29.ffn_gate.weight
+0.00.248.894 D create_tensor: loading tensor blk.29.ffn_down.weight
+0.00.248.918 D create_tensor: loading tensor blk.29.ffn_up.weight
+0.00.248.960 D create_tensor: loading tensor blk.30.attn_norm.weight
+0.00.248.990 D create_tensor: loading tensor blk.30.attn_q.weight
+0.00.249.014 D create_tensor: loading tensor blk.30.attn_k.weight
+0.00.249.037 D create_tensor: loading tensor blk.30.attn_v.weight
+0.00.249.078 D create_tensor: loading tensor blk.30.attn_output.weight
+0.00.249.110 D create_tensor: loading tensor blk.30.ffn_norm.weight
+0.00.249.136 D create_tensor: loading tensor blk.30.ffn_gate.weight
+0.00.249.160 D create_tensor: loading tensor blk.30.ffn_down.weight
+0.00.249.183 D create_tensor: loading tensor blk.30.ffn_up.weight
+0.00.249.225 D create_tensor: loading tensor blk.31.attn_norm.weight
+0.00.249.255 D create_tensor: loading tensor blk.31.attn_q.weight
+0.00.249.279 D create_tensor: loading tensor blk.31.attn_k.weight
+0.00.249.303 D create_tensor: loading tensor blk.31.attn_v.weight
+0.00.249.345 D create_tensor: loading tensor blk.31.attn_output.weight
+0.00.249.376 D create_tensor: loading tensor blk.31.ffn_norm.weight
+0.00.249.404 D create_tensor: loading tensor blk.31.ffn_gate.weight
+0.00.249.429 D create_tensor: loading tensor blk.31.ffn_down.weight
+0.00.249.466 D create_tensor: loading tensor blk.31.ffn_up.weight
+0.00.250.654 D done_getting_tensors: tensor 'token_embd.weight' (q4_K) (and 0 others) cannot be used with preferred buffer type CUDA_Host, using CPU instead
+0.00.468.819 I load_tensors: offloading output layer to GPU
+0.00.468.845 I load_tensors: offloading 31 repeating layers to GPU
+0.00.468.846 I load_tensors: offloaded 33/33 layers to GPU
+0.00.468.854 I load_tensors:   CPU_Mapped model buffer size =    70.31 MiB
+0.00.468.856 I load_tensors:        CUDA0 model buffer size =  3820.94 MiB
+..................................................................................................
+0.01.459.304 I cmn  common_init_: added </s> logit bias = -inf
+0.01.459.817 I llama_context: constructing llama_context
+0.01.459.826 I llama_context: n_seq_max     = 1
+0.01.459.827 I llama_context: n_ctx         = 4096
+0.01.459.827 I llama_context: n_ctx_seq     = 4096
+0.01.459.828 I llama_context: n_batch       = 2048
+0.01.459.828 I llama_context: n_ubatch      = 1024
+0.01.459.828 I llama_context: causal_attn   = 1
+0.01.459.829 I llama_context: flash_attn    = auto
+0.01.459.830 I llama_context: kv_unified    = false
+0.01.459.833 I llama_context: freq_base     = 10000.0
+0.01.459.834 I llama_context: freq_scale    = 1
+0.01.459.834 I llama_context: n_rs_seq      = 0
+0.01.459.835 I llama_context: n_outputs_max = 2048
+0.01.460.393 D set_abort_callback: call
+0.01.461.749 I llama_context:  CUDA_Host  output buffer size =     0.12 MiB
+0.01.461.830 D llama_kv_cache: layer   0: dev = CUDA0
+0.01.461.850 D llama_kv_cache: layer   1: dev = CUDA0
+0.01.461.857 D llama_kv_cache: layer   2: dev = CUDA0
+0.01.461.860 D llama_kv_cache: layer   3: dev = CUDA0
+0.01.461.862 D llama_kv_cache: layer   4: dev = CUDA0
+0.01.461.867 D llama_kv_cache: layer   5: dev = CUDA0
+0.01.461.870 D llama_kv_cache: layer   6: dev = CUDA0
+0.01.461.874 D llama_kv_cache: layer   7: dev = CUDA0
+0.01.461.878 D llama_kv_cache: layer   8: dev = CUDA0
+0.01.461.881 D llama_kv_cache: layer   9: dev = CUDA0
+0.01.461.885 D llama_kv_cache: layer  10: dev = CUDA0
+0.01.461.889 D llama_kv_cache: layer  11: dev = CUDA0
+0.01.461.892 D llama_kv_cache: layer  12: dev = CUDA0
+0.01.461.896 D llama_kv_cache: layer  13: dev = CUDA0
+0.01.461.902 D llama_kv_cache: layer  14: dev = CUDA0
+0.01.461.906 D llama_kv_cache: layer  15: dev = CUDA0
+0.01.461.909 D llama_kv_cache: layer  16: dev = CUDA0
+0.01.461.914 D llama_kv_cache: layer  17: dev = CUDA0
+0.01.461.918 D llama_kv_cache: layer  18: dev = CUDA0
+0.01.461.922 D llama_kv_cache: layer  19: dev = CUDA0
+0.01.461.925 D llama_kv_cache: layer  20: dev = CUDA0
+0.01.461.929 D llama_kv_cache: layer  21: dev = CUDA0
+0.01.461.932 D llama_kv_cache: layer  22: dev = CUDA0
+0.01.461.936 D llama_kv_cache: layer  23: dev = CUDA0
+0.01.461.939 D llama_kv_cache: layer  24: dev = CUDA0
+0.01.461.943 D llama_kv_cache: layer  25: dev = CUDA0
+0.01.461.947 D llama_kv_cache: layer  26: dev = CUDA0
+0.01.461.950 D llama_kv_cache: layer  27: dev = CUDA0
+0.01.461.953 D llama_kv_cache: layer  28: dev = CUDA0
+0.01.461.957 D llama_kv_cache: layer  29: dev = CUDA0
+0.01.461.961 D llama_kv_cache: layer  30: dev = CUDA0
+0.01.461.966 D llama_kv_cache: layer  31: dev = CUDA0
+0.01.462.326 I llama_kv_cache:      CUDA0 KV buffer size =  2048.00 MiB
+0.01.465.998 I llama_kv_cache: size = 2048.00 MiB (  4096 cells,  32 layers,  1/1 seqs), K (f16): 1024.00 MiB, V (f16): 1024.00 MiB
+0.01.466.005 I llama_kv_cache: attn_rot_k = 0, n_embd_head_k_all = 128
+0.01.466.005 I llama_kv_cache: attn_rot_v = 0, n_embd_head_k_all = 128
+0.01.466.008 D llama_context: enumerating backends
+0.01.466.134 D llama_context: backend_ptrs.size() = 2
+0.01.466.135 I sched_reserve: reserving ...
+0.01.466.137 D sched_reserve: max_nodes = 2328
+0.01.467.395 D sched_reserve: reserving full memory module
+0.01.467.404 D sched_reserve: worst-case: n_tokens = 1024, n_seqs = 1, n_outputs = 1
+0.01.467.406 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.468.050 D ggml_cuda_graph_set_enabled: disabling CUDA graphs due to GPU architecture
+0.01.468.119 I resolve_fused_ops: Flash Attention enabled
+0.01.468.126 I resolve_fused_ops: resolving fused Gated Delta Net support:
+0.01.468.129 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.468.772 I resolve_fused_ops: fused Gated Delta Net (autoregressive) enabled
+0.01.468.781 D graph_reserve: reserving a graph for ubatch with n_tokens =   16, n_seqs =  1, n_outputs =   16
+0.01.469.371 I resolve_fused_ops: fused Gated Delta Net (chunked) enabled
+0.01.469.379 I resolve_fused_ops: resolving fused Lightning Indexer support:
+0.01.469.380 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.469.971 I resolve_fused_ops: Lightning Indexer enabled
+0.01.469.979 I resolve_fused_ops: resolving fused DeepSeek V4 HC support:
+0.01.469.980 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.470.607 I resolve_fused_ops: fused DeepSeek V4 HC pre enabled
+0.01.470.614 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.471.192 I resolve_fused_ops: fused DeepSeek V4 HC comb enabled
+0.01.471.201 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.471.827 I resolve_fused_ops: fused DeepSeek V4 HC post enabled
+0.01.471.835 D graph_reserve: reserving a graph for ubatch with n_tokens = 1024, n_seqs =  1, n_outputs = 1024
+0.01.496.084 D graph_reserve: reserving a graph for ubatch with n_tokens =    1, n_seqs =  1, n_outputs =    1
+0.01.497.148 D graph_reserve: reserving a graph for ubatch with n_tokens = 1024, n_seqs =  1, n_outputs = 1024
+0.01.498.100 I sched_reserve:      CUDA0 compute buffer size =   185.02 MiB
+0.01.498.110 I sched_reserve:  CUDA_Host compute buffer size =    40.03 MiB
+0.01.498.111 I sched_reserve: graph nodes  = 998
+0.01.498.111 I sched_reserve: graph splits = 2
+0.01.498.113 I sched_reserve: reserve took 31.98 ms, sched copies = 1
+0.01.498.280 D set_adapters_lora: adapters = (nil)
+0.01.498.287 D adapters_lora_are_same: adapters = (nil)
+0.01.498.288 I cmn  common_init_: warming up the model with an empty run - please wait ... (--no-warmup to disable)
+0.01.498.976 D ggml_cuda_graph_set_enabled: disabling CUDA graphs due to GPU architecture
+0.01.575.675 I mtmd_cli_context: chat template example:
+You are a helpful assistant
+
+USER: Hello
+ASSISTANT: Hi there</s>
+USER: How are you?
+ASSISTANT:
+0.01.576.585 I clip_model_loader: model name:   openai/clip-vit-large-patch14-336
+0.01.576.592 I clip_model_loader: description:  image encoder for LLaVA
+0.01.576.594 I clip_model_loader: GGUF version: 3
+0.01.576.595 I clip_model_loader: alignment:    32
+0.01.576.596 I clip_model_loader: n_tensors:    377
+0.01.576.597 I clip_model_loader: n_kv:         19
+0.01.576.598 I 
+0.01.576.601 I clip_model_loader: has vision encoder
+0.01.576.613 D clip_model_loader: tensor[0]: n_dims = 2, name = mm.0.weight, tensor_size=8388608, offset=0, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.629 D clip_model_loader: tensor[1]: n_dims = 1, name = mm.0.bias, tensor_size=16384, offset=8388608, shape:[4096, 1, 1, 1], type = f32
+0.01.576.633 D clip_model_loader: tensor[2]: n_dims = 2, name = mm.2.weight, tensor_size=33554432, offset=8404992, shape:[4096, 4096, 1, 1], type = f16
+0.01.576.637 D clip_model_loader: tensor[3]: n_dims = 1, name = mm.2.bias, tensor_size=16384, offset=41959424, shape:[4096, 1, 1, 1], type = f32
+0.01.576.642 D clip_model_loader: tensor[4]: n_dims = 1, name = v.class_embd, tensor_size=4096, offset=41975808, shape:[1024, 1, 1, 1], type = f32
+0.01.576.646 D clip_model_loader: tensor[5]: n_dims = 4, name = v.patch_embd.weight, tensor_size=1204224, offset=41979904, shape:[14, 14, 3, 1024], type = f16
+0.01.576.651 D clip_model_loader: tensor[6]: n_dims = 2, name = v.position_embd.weight, tensor_size=1181696, offset=43184128, shape:[1024, 577, 1, 1], type = f16
+0.01.576.653 D clip_model_loader: tensor[7]: n_dims = 1, name = v.pre_ln.weight, tensor_size=4096, offset=44365824, shape:[1024, 1, 1, 1], type = f32
+0.01.576.655 D clip_model_loader: tensor[8]: n_dims = 1, name = v.pre_ln.bias, tensor_size=4096, offset=44369920, shape:[1024, 1, 1, 1], type = f32
+0.01.576.657 D clip_model_loader: tensor[9]: n_dims = 2, name = v.blk.0.attn_k.weight, tensor_size=2097152, offset=44374016, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.659 D clip_model_loader: tensor[10]: n_dims = 1, name = v.blk.0.attn_k.bias, tensor_size=4096, offset=46471168, shape:[1024, 1, 1, 1], type = f32
+0.01.576.661 D clip_model_loader: tensor[11]: n_dims = 2, name = v.blk.0.attn_v.weight, tensor_size=2097152, offset=46475264, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.664 D clip_model_loader: tensor[12]: n_dims = 1, name = v.blk.0.attn_v.bias, tensor_size=4096, offset=48572416, shape:[1024, 1, 1, 1], type = f32
+0.01.576.666 D clip_model_loader: tensor[13]: n_dims = 2, name = v.blk.0.attn_q.weight, tensor_size=2097152, offset=48576512, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.670 D clip_model_loader: tensor[14]: n_dims = 1, name = v.blk.0.attn_q.bias, tensor_size=4096, offset=50673664, shape:[1024, 1, 1, 1], type = f32
+0.01.576.672 D clip_model_loader: tensor[15]: n_dims = 2, name = v.blk.0.attn_out.weight, tensor_size=2097152, offset=50677760, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.675 D clip_model_loader: tensor[16]: n_dims = 1, name = v.blk.0.attn_out.bias, tensor_size=4096, offset=52774912, shape:[1024, 1, 1, 1], type = f32
+0.01.576.677 D clip_model_loader: tensor[17]: n_dims = 1, name = v.blk.0.ln1.weight, tensor_size=4096, offset=52779008, shape:[1024, 1, 1, 1], type = f32
+0.01.576.679 D clip_model_loader: tensor[18]: n_dims = 1, name = v.blk.0.ln1.bias, tensor_size=4096, offset=52783104, shape:[1024, 1, 1, 1], type = f32
+0.01.576.683 D clip_model_loader: tensor[19]: n_dims = 2, name = v.blk.0.ffn_down.weight, tensor_size=8388608, offset=52787200, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.686 D clip_model_loader: tensor[20]: n_dims = 1, name = v.blk.0.ffn_down.bias, tensor_size=16384, offset=61175808, shape:[4096, 1, 1, 1], type = f32
+0.01.576.690 D clip_model_loader: tensor[21]: n_dims = 2, name = v.blk.0.ffn_up.weight, tensor_size=8388608, offset=61192192, shape:[4096, 1024, 1, 1], type = f16
+0.01.576.695 D clip_model_loader: tensor[22]: n_dims = 1, name = v.blk.0.ffn_up.bias, tensor_size=4096, offset=69580800, shape:[1024, 1, 1, 1], type = f32
+0.01.576.699 D clip_model_loader: tensor[23]: n_dims = 1, name = v.blk.0.ln2.weight, tensor_size=4096, offset=69584896, shape:[1024, 1, 1, 1], type = f32
+0.01.576.703 D clip_model_loader: tensor[24]: n_dims = 1, name = v.blk.0.ln2.bias, tensor_size=4096, offset=69588992, shape:[1024, 1, 1, 1], type = f32
+0.01.576.706 D clip_model_loader: tensor[25]: n_dims = 2, name = v.blk.1.attn_k.weight, tensor_size=2097152, offset=69593088, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.710 D clip_model_loader: tensor[26]: n_dims = 1, name = v.blk.1.attn_k.bias, tensor_size=4096, offset=71690240, shape:[1024, 1, 1, 1], type = f32
+0.01.576.714 D clip_model_loader: tensor[27]: n_dims = 2, name = v.blk.1.attn_v.weight, tensor_size=2097152, offset=71694336, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.717 D clip_model_loader: tensor[28]: n_dims = 1, name = v.blk.1.attn_v.bias, tensor_size=4096, offset=73791488, shape:[1024, 1, 1, 1], type = f32
+0.01.576.721 D clip_model_loader: tensor[29]: n_dims = 2, name = v.blk.1.attn_q.weight, tensor_size=2097152, offset=73795584, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.725 D clip_model_loader: tensor[30]: n_dims = 1, name = v.blk.1.attn_q.bias, tensor_size=4096, offset=75892736, shape:[1024, 1, 1, 1], type = f32
+0.01.576.729 D clip_model_loader: tensor[31]: n_dims = 2, name = v.blk.1.attn_out.weight, tensor_size=2097152, offset=75896832, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.733 D clip_model_loader: tensor[32]: n_dims = 1, name = v.blk.1.attn_out.bias, tensor_size=4096, offset=77993984, shape:[1024, 1, 1, 1], type = f32
+0.01.576.736 D clip_model_loader: tensor[33]: n_dims = 1, name = v.blk.1.ln1.weight, tensor_size=4096, offset=77998080, shape:[1024, 1, 1, 1], type = f32
+0.01.576.740 D clip_model_loader: tensor[34]: n_dims = 1, name = v.blk.1.ln1.bias, tensor_size=4096, offset=78002176, shape:[1024, 1, 1, 1], type = f32
+0.01.576.744 D clip_model_loader: tensor[35]: n_dims = 2, name = v.blk.1.ffn_down.weight, tensor_size=8388608, offset=78006272, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.747 D clip_model_loader: tensor[36]: n_dims = 1, name = v.blk.1.ffn_down.bias, tensor_size=16384, offset=86394880, shape:[4096, 1, 1, 1], type = f32
+0.01.576.751 D clip_model_loader: tensor[37]: n_dims = 2, name = v.blk.1.ffn_up.weight, tensor_size=8388608, offset=86411264, shape:[4096, 1024, 1, 1], type = f16
+0.01.576.755 D clip_model_loader: tensor[38]: n_dims = 1, name = v.blk.1.ffn_up.bias, tensor_size=4096, offset=94799872, shape:[1024, 1, 1, 1], type = f32
+0.01.576.758 D clip_model_loader: tensor[39]: n_dims = 1, name = v.blk.1.ln2.weight, tensor_size=4096, offset=94803968, shape:[1024, 1, 1, 1], type = f32
+0.01.576.762 D clip_model_loader: tensor[40]: n_dims = 1, name = v.blk.1.ln2.bias, tensor_size=4096, offset=94808064, shape:[1024, 1, 1, 1], type = f32
+0.01.576.765 D clip_model_loader: tensor[41]: n_dims = 2, name = v.blk.2.attn_k.weight, tensor_size=2097152, offset=94812160, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.770 D clip_model_loader: tensor[42]: n_dims = 1, name = v.blk.2.attn_k.bias, tensor_size=4096, offset=96909312, shape:[1024, 1, 1, 1], type = f32
+0.01.576.774 D clip_model_loader: tensor[43]: n_dims = 2, name = v.blk.2.attn_v.weight, tensor_size=2097152, offset=96913408, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.777 D clip_model_loader: tensor[44]: n_dims = 1, name = v.blk.2.attn_v.bias, tensor_size=4096, offset=99010560, shape:[1024, 1, 1, 1], type = f32
+0.01.576.781 D clip_model_loader: tensor[45]: n_dims = 2, name = v.blk.2.attn_q.weight, tensor_size=2097152, offset=99014656, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.785 D clip_model_loader: tensor[46]: n_dims = 1, name = v.blk.2.attn_q.bias, tensor_size=4096, offset=101111808, shape:[1024, 1, 1, 1], type = f32
+0.01.576.790 D clip_model_loader: tensor[47]: n_dims = 2, name = v.blk.2.attn_out.weight, tensor_size=2097152, offset=101115904, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.793 D clip_model_loader: tensor[48]: n_dims = 1, name = v.blk.2.attn_out.bias, tensor_size=4096, offset=103213056, shape:[1024, 1, 1, 1], type = f32
+0.01.576.797 D clip_model_loader: tensor[49]: n_dims = 1, name = v.blk.2.ln1.weight, tensor_size=4096, offset=103217152, shape:[1024, 1, 1, 1], type = f32
+0.01.576.801 D clip_model_loader: tensor[50]: n_dims = 1, name = v.blk.2.ln1.bias, tensor_size=4096, offset=103221248, shape:[1024, 1, 1, 1], type = f32
+0.01.576.805 D clip_model_loader: tensor[51]: n_dims = 2, name = v.blk.2.ffn_down.weight, tensor_size=8388608, offset=103225344, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.809 D clip_model_loader: tensor[52]: n_dims = 1, name = v.blk.2.ffn_down.bias, tensor_size=16384, offset=111613952, shape:[4096, 1, 1, 1], type = f32
+0.01.576.813 D clip_model_loader: tensor[53]: n_dims = 2, name = v.blk.2.ffn_up.weight, tensor_size=8388608, offset=111630336, shape:[4096, 1024, 1, 1], type = f16
+0.01.576.817 D clip_model_loader: tensor[54]: n_dims = 1, name = v.blk.2.ffn_up.bias, tensor_size=4096, offset=120018944, shape:[1024, 1, 1, 1], type = f32
+0.01.576.821 D clip_model_loader: tensor[55]: n_dims = 1, name = v.blk.2.ln2.weight, tensor_size=4096, offset=120023040, shape:[1024, 1, 1, 1], type = f32
+0.01.576.825 D clip_model_loader: tensor[56]: n_dims = 1, name = v.blk.2.ln2.bias, tensor_size=4096, offset=120027136, shape:[1024, 1, 1, 1], type = f32
+0.01.576.829 D clip_model_loader: tensor[57]: n_dims = 2, name = v.blk.3.attn_k.weight, tensor_size=2097152, offset=120031232, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.833 D clip_model_loader: tensor[58]: n_dims = 1, name = v.blk.3.attn_k.bias, tensor_size=4096, offset=122128384, shape:[1024, 1, 1, 1], type = f32
+0.01.576.838 D clip_model_loader: tensor[59]: n_dims = 2, name = v.blk.3.attn_v.weight, tensor_size=2097152, offset=122132480, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.842 D clip_model_loader: tensor[60]: n_dims = 1, name = v.blk.3.attn_v.bias, tensor_size=4096, offset=124229632, shape:[1024, 1, 1, 1], type = f32
+0.01.576.847 D clip_model_loader: tensor[61]: n_dims = 2, name = v.blk.3.attn_q.weight, tensor_size=2097152, offset=124233728, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.850 D clip_model_loader: tensor[62]: n_dims = 1, name = v.blk.3.attn_q.bias, tensor_size=4096, offset=126330880, shape:[1024, 1, 1, 1], type = f32
+0.01.576.855 D clip_model_loader: tensor[63]: n_dims = 2, name = v.blk.3.attn_out.weight, tensor_size=2097152, offset=126334976, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.859 D clip_model_loader: tensor[64]: n_dims = 1, name = v.blk.3.attn_out.bias, tensor_size=4096, offset=128432128, shape:[1024, 1, 1, 1], type = f32
+0.01.576.862 D clip_model_loader: tensor[65]: n_dims = 1, name = v.blk.3.ln1.weight, tensor_size=4096, offset=128436224, shape:[1024, 1, 1, 1], type = f32
+0.01.576.866 D clip_model_loader: tensor[66]: n_dims = 1, name = v.blk.3.ln1.bias, tensor_size=4096, offset=128440320, shape:[1024, 1, 1, 1], type = f32
+0.01.576.871 D clip_model_loader: tensor[67]: n_dims = 2, name = v.blk.3.ffn_down.weight, tensor_size=8388608, offset=128444416, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.875 D clip_model_loader: tensor[68]: n_dims = 1, name = v.blk.3.ffn_down.bias, tensor_size=16384, offset=136833024, shape:[4096, 1, 1, 1], type = f32
+0.01.576.879 D clip_model_loader: tensor[69]: n_dims = 2, name = v.blk.3.ffn_up.weight, tensor_size=8388608, offset=136849408, shape:[4096, 1024, 1, 1], type = f16
+0.01.576.883 D clip_model_loader: tensor[70]: n_dims = 1, name = v.blk.3.ffn_up.bias, tensor_size=4096, offset=145238016, shape:[1024, 1, 1, 1], type = f32
+0.01.576.888 D clip_model_loader: tensor[71]: n_dims = 1, name = v.blk.3.ln2.weight, tensor_size=4096, offset=145242112, shape:[1024, 1, 1, 1], type = f32
+0.01.576.892 D clip_model_loader: tensor[72]: n_dims = 1, name = v.blk.3.ln2.bias, tensor_size=4096, offset=145246208, shape:[1024, 1, 1, 1], type = f32
+0.01.576.896 D clip_model_loader: tensor[73]: n_dims = 2, name = v.blk.4.attn_k.weight, tensor_size=2097152, offset=145250304, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.900 D clip_model_loader: tensor[74]: n_dims = 1, name = v.blk.4.attn_k.bias, tensor_size=4096, offset=147347456, shape:[1024, 1, 1, 1], type = f32
+0.01.576.904 D clip_model_loader: tensor[75]: n_dims = 2, name = v.blk.4.attn_v.weight, tensor_size=2097152, offset=147351552, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.908 D clip_model_loader: tensor[76]: n_dims = 1, name = v.blk.4.attn_v.bias, tensor_size=4096, offset=149448704, shape:[1024, 1, 1, 1], type = f32
+0.01.576.913 D clip_model_loader: tensor[77]: n_dims = 2, name = v.blk.4.attn_q.weight, tensor_size=2097152, offset=149452800, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.917 D clip_model_loader: tensor[78]: n_dims = 1, name = v.blk.4.attn_q.bias, tensor_size=4096, offset=151549952, shape:[1024, 1, 1, 1], type = f32
+0.01.576.921 D clip_model_loader: tensor[79]: n_dims = 2, name = v.blk.4.attn_out.weight, tensor_size=2097152, offset=151554048, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.925 D clip_model_loader: tensor[80]: n_dims = 1, name = v.blk.4.attn_out.bias, tensor_size=4096, offset=153651200, shape:[1024, 1, 1, 1], type = f32
+0.01.576.929 D clip_model_loader: tensor[81]: n_dims = 1, name = v.blk.4.ln1.weight, tensor_size=4096, offset=153655296, shape:[1024, 1, 1, 1], type = f32
+0.01.576.932 D clip_model_loader: tensor[82]: n_dims = 1, name = v.blk.4.ln1.bias, tensor_size=4096, offset=153659392, shape:[1024, 1, 1, 1], type = f32
+0.01.576.936 D clip_model_loader: tensor[83]: n_dims = 2, name = v.blk.4.ffn_down.weight, tensor_size=8388608, offset=153663488, shape:[1024, 4096, 1, 1], type = f16
+0.01.576.941 D clip_model_loader: tensor[84]: n_dims = 1, name = v.blk.4.ffn_down.bias, tensor_size=16384, offset=162052096, shape:[4096, 1, 1, 1], type = f32
+0.01.576.946 D clip_model_loader: tensor[85]: n_dims = 2, name = v.blk.4.ffn_up.weight, tensor_size=8388608, offset=162068480, shape:[4096, 1024, 1, 1], type = f16
+0.01.576.950 D clip_model_loader: tensor[86]: n_dims = 1, name = v.blk.4.ffn_up.bias, tensor_size=4096, offset=170457088, shape:[1024, 1, 1, 1], type = f32
+0.01.576.955 D clip_model_loader: tensor[87]: n_dims = 1, name = v.blk.4.ln2.weight, tensor_size=4096, offset=170461184, shape:[1024, 1, 1, 1], type = f32
+0.01.576.958 D clip_model_loader: tensor[88]: n_dims = 1, name = v.blk.4.ln2.bias, tensor_size=4096, offset=170465280, shape:[1024, 1, 1, 1], type = f32
+0.01.576.963 D clip_model_loader: tensor[89]: n_dims = 2, name = v.blk.5.attn_k.weight, tensor_size=2097152, offset=170469376, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.968 D clip_model_loader: tensor[90]: n_dims = 1, name = v.blk.5.attn_k.bias, tensor_size=4096, offset=172566528, shape:[1024, 1, 1, 1], type = f32
+0.01.576.972 D clip_model_loader: tensor[91]: n_dims = 2, name = v.blk.5.attn_v.weight, tensor_size=2097152, offset=172570624, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.976 D clip_model_loader: tensor[92]: n_dims = 1, name = v.blk.5.attn_v.bias, tensor_size=4096, offset=174667776, shape:[1024, 1, 1, 1], type = f32
+0.01.576.981 D clip_model_loader: tensor[93]: n_dims = 2, name = v.blk.5.attn_q.weight, tensor_size=2097152, offset=174671872, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.985 D clip_model_loader: tensor[94]: n_dims = 1, name = v.blk.5.attn_q.bias, tensor_size=4096, offset=176769024, shape:[1024, 1, 1, 1], type = f32
+0.01.576.989 D clip_model_loader: tensor[95]: n_dims = 2, name = v.blk.5.attn_out.weight, tensor_size=2097152, offset=176773120, shape:[1024, 1024, 1, 1], type = f16
+0.01.576.994 D clip_model_loader: tensor[96]: n_dims = 1, name = v.blk.5.attn_out.bias, tensor_size=4096, offset=178870272, shape:[1024, 1, 1, 1], type = f32
+0.01.576.998 D clip_model_loader: tensor[97]: n_dims = 1, name = v.blk.5.ln1.weight, tensor_size=4096, offset=178874368, shape:[1024, 1, 1, 1], type = f32
+0.01.577.003 D clip_model_loader: tensor[98]: n_dims = 1, name = v.blk.5.ln1.bias, tensor_size=4096, offset=178878464, shape:[1024, 1, 1, 1], type = f32
+0.01.577.008 D clip_model_loader: tensor[99]: n_dims = 2, name = v.blk.5.ffn_down.weight, tensor_size=8388608, offset=178882560, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.012 D clip_model_loader: tensor[100]: n_dims = 1, name = v.blk.5.ffn_down.bias, tensor_size=16384, offset=187271168, shape:[4096, 1, 1, 1], type = f32
+0.01.577.017 D clip_model_loader: tensor[101]: n_dims = 2, name = v.blk.5.ffn_up.weight, tensor_size=8388608, offset=187287552, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.022 D clip_model_loader: tensor[102]: n_dims = 1, name = v.blk.5.ffn_up.bias, tensor_size=4096, offset=195676160, shape:[1024, 1, 1, 1], type = f32
+0.01.577.026 D clip_model_loader: tensor[103]: n_dims = 1, name = v.blk.5.ln2.weight, tensor_size=4096, offset=195680256, shape:[1024, 1, 1, 1], type = f32
+0.01.577.031 D clip_model_loader: tensor[104]: n_dims = 1, name = v.blk.5.ln2.bias, tensor_size=4096, offset=195684352, shape:[1024, 1, 1, 1], type = f32
+0.01.577.036 D clip_model_loader: tensor[105]: n_dims = 2, name = v.blk.6.attn_k.weight, tensor_size=2097152, offset=195688448, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.041 D clip_model_loader: tensor[106]: n_dims = 1, name = v.blk.6.attn_k.bias, tensor_size=4096, offset=197785600, shape:[1024, 1, 1, 1], type = f32
+0.01.577.046 D clip_model_loader: tensor[107]: n_dims = 2, name = v.blk.6.attn_v.weight, tensor_size=2097152, offset=197789696, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.050 D clip_model_loader: tensor[108]: n_dims = 1, name = v.blk.6.attn_v.bias, tensor_size=4096, offset=199886848, shape:[1024, 1, 1, 1], type = f32
+0.01.577.056 D clip_model_loader: tensor[109]: n_dims = 2, name = v.blk.6.attn_q.weight, tensor_size=2097152, offset=199890944, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.084 D clip_model_loader: tensor[110]: n_dims = 1, name = v.blk.6.attn_q.bias, tensor_size=4096, offset=201988096, shape:[1024, 1, 1, 1], type = f32
+0.01.577.095 D clip_model_loader: tensor[111]: n_dims = 2, name = v.blk.6.attn_out.weight, tensor_size=2097152, offset=201992192, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.099 D clip_model_loader: tensor[112]: n_dims = 1, name = v.blk.6.attn_out.bias, tensor_size=4096, offset=204089344, shape:[1024, 1, 1, 1], type = f32
+0.01.577.121 D clip_model_loader: tensor[113]: n_dims = 1, name = v.blk.6.ln1.weight, tensor_size=4096, offset=204093440, shape:[1024, 1, 1, 1], type = f32
+0.01.577.126 D clip_model_loader: tensor[114]: n_dims = 1, name = v.blk.6.ln1.bias, tensor_size=4096, offset=204097536, shape:[1024, 1, 1, 1], type = f32
+0.01.577.132 D clip_model_loader: tensor[115]: n_dims = 2, name = v.blk.6.ffn_down.weight, tensor_size=8388608, offset=204101632, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.137 D clip_model_loader: tensor[116]: n_dims = 1, name = v.blk.6.ffn_down.bias, tensor_size=16384, offset=212490240, shape:[4096, 1, 1, 1], type = f32
+0.01.577.144 D clip_model_loader: tensor[117]: n_dims = 2, name = v.blk.6.ffn_up.weight, tensor_size=8388608, offset=212506624, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.150 D clip_model_loader: tensor[118]: n_dims = 1, name = v.blk.6.ffn_up.bias, tensor_size=4096, offset=220895232, shape:[1024, 1, 1, 1], type = f32
+0.01.577.155 D clip_model_loader: tensor[119]: n_dims = 1, name = v.blk.6.ln2.weight, tensor_size=4096, offset=220899328, shape:[1024, 1, 1, 1], type = f32
+0.01.577.164 D clip_model_loader: tensor[120]: n_dims = 1, name = v.blk.6.ln2.bias, tensor_size=4096, offset=220903424, shape:[1024, 1, 1, 1], type = f32
+0.01.577.175 D clip_model_loader: tensor[121]: n_dims = 2, name = v.blk.7.attn_k.weight, tensor_size=2097152, offset=220907520, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.184 D clip_model_loader: tensor[122]: n_dims = 1, name = v.blk.7.attn_k.bias, tensor_size=4096, offset=223004672, shape:[1024, 1, 1, 1], type = f32
+0.01.577.195 D clip_model_loader: tensor[123]: n_dims = 2, name = v.blk.7.attn_v.weight, tensor_size=2097152, offset=223008768, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.200 D clip_model_loader: tensor[124]: n_dims = 1, name = v.blk.7.attn_v.bias, tensor_size=4096, offset=225105920, shape:[1024, 1, 1, 1], type = f32
+0.01.577.207 D clip_model_loader: tensor[125]: n_dims = 2, name = v.blk.7.attn_q.weight, tensor_size=2097152, offset=225110016, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.212 D clip_model_loader: tensor[126]: n_dims = 1, name = v.blk.7.attn_q.bias, tensor_size=4096, offset=227207168, shape:[1024, 1, 1, 1], type = f32
+0.01.577.218 D clip_model_loader: tensor[127]: n_dims = 2, name = v.blk.7.attn_out.weight, tensor_size=2097152, offset=227211264, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.225 D clip_model_loader: tensor[128]: n_dims = 1, name = v.blk.7.attn_out.bias, tensor_size=4096, offset=229308416, shape:[1024, 1, 1, 1], type = f32
+0.01.577.237 D clip_model_loader: tensor[129]: n_dims = 1, name = v.blk.7.ln1.weight, tensor_size=4096, offset=229312512, shape:[1024, 1, 1, 1], type = f32
+0.01.577.243 D clip_model_loader: tensor[130]: n_dims = 1, name = v.blk.7.ln1.bias, tensor_size=4096, offset=229316608, shape:[1024, 1, 1, 1], type = f32
+0.01.577.249 D clip_model_loader: tensor[131]: n_dims = 2, name = v.blk.7.ffn_down.weight, tensor_size=8388608, offset=229320704, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.254 D clip_model_loader: tensor[132]: n_dims = 1, name = v.blk.7.ffn_down.bias, tensor_size=16384, offset=237709312, shape:[4096, 1, 1, 1], type = f32
+0.01.577.258 D clip_model_loader: tensor[133]: n_dims = 2, name = v.blk.7.ffn_up.weight, tensor_size=8388608, offset=237725696, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.262 D clip_model_loader: tensor[134]: n_dims = 1, name = v.blk.7.ffn_up.bias, tensor_size=4096, offset=246114304, shape:[1024, 1, 1, 1], type = f32
+0.01.577.268 D clip_model_loader: tensor[135]: n_dims = 1, name = v.blk.7.ln2.weight, tensor_size=4096, offset=246118400, shape:[1024, 1, 1, 1], type = f32
+0.01.577.273 D clip_model_loader: tensor[136]: n_dims = 1, name = v.blk.7.ln2.bias, tensor_size=4096, offset=246122496, shape:[1024, 1, 1, 1], type = f32
+0.01.577.278 D clip_model_loader: tensor[137]: n_dims = 2, name = v.blk.8.attn_k.weight, tensor_size=2097152, offset=246126592, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.284 D clip_model_loader: tensor[138]: n_dims = 1, name = v.blk.8.attn_k.bias, tensor_size=4096, offset=248223744, shape:[1024, 1, 1, 1], type = f32
+0.01.577.289 D clip_model_loader: tensor[139]: n_dims = 2, name = v.blk.8.attn_v.weight, tensor_size=2097152, offset=248227840, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.294 D clip_model_loader: tensor[140]: n_dims = 1, name = v.blk.8.attn_v.bias, tensor_size=4096, offset=250324992, shape:[1024, 1, 1, 1], type = f32
+0.01.577.300 D clip_model_loader: tensor[141]: n_dims = 2, name = v.blk.8.attn_q.weight, tensor_size=2097152, offset=250329088, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.305 D clip_model_loader: tensor[142]: n_dims = 1, name = v.blk.8.attn_q.bias, tensor_size=4096, offset=252426240, shape:[1024, 1, 1, 1], type = f32
+0.01.577.311 D clip_model_loader: tensor[143]: n_dims = 2, name = v.blk.8.attn_out.weight, tensor_size=2097152, offset=252430336, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.315 D clip_model_loader: tensor[144]: n_dims = 1, name = v.blk.8.attn_out.bias, tensor_size=4096, offset=254527488, shape:[1024, 1, 1, 1], type = f32
+0.01.577.319 D clip_model_loader: tensor[145]: n_dims = 1, name = v.blk.8.ln1.weight, tensor_size=4096, offset=254531584, shape:[1024, 1, 1, 1], type = f32
+0.01.577.324 D clip_model_loader: tensor[146]: n_dims = 1, name = v.blk.8.ln1.bias, tensor_size=4096, offset=254535680, shape:[1024, 1, 1, 1], type = f32
+0.01.577.330 D clip_model_loader: tensor[147]: n_dims = 2, name = v.blk.8.ffn_down.weight, tensor_size=8388608, offset=254539776, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.335 D clip_model_loader: tensor[148]: n_dims = 1, name = v.blk.8.ffn_down.bias, tensor_size=16384, offset=262928384, shape:[4096, 1, 1, 1], type = f32
+0.01.577.340 D clip_model_loader: tensor[149]: n_dims = 2, name = v.blk.8.ffn_up.weight, tensor_size=8388608, offset=262944768, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.346 D clip_model_loader: tensor[150]: n_dims = 1, name = v.blk.8.ffn_up.bias, tensor_size=4096, offset=271333376, shape:[1024, 1, 1, 1], type = f32
+0.01.577.352 D clip_model_loader: tensor[151]: n_dims = 1, name = v.blk.8.ln2.weight, tensor_size=4096, offset=271337472, shape:[1024, 1, 1, 1], type = f32
+0.01.577.357 D clip_model_loader: tensor[152]: n_dims = 1, name = v.blk.8.ln2.bias, tensor_size=4096, offset=271341568, shape:[1024, 1, 1, 1], type = f32
+0.01.577.363 D clip_model_loader: tensor[153]: n_dims = 2, name = v.blk.9.attn_k.weight, tensor_size=2097152, offset=271345664, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.369 D clip_model_loader: tensor[154]: n_dims = 1, name = v.blk.9.attn_k.bias, tensor_size=4096, offset=273442816, shape:[1024, 1, 1, 1], type = f32
+0.01.577.374 D clip_model_loader: tensor[155]: n_dims = 2, name = v.blk.9.attn_v.weight, tensor_size=2097152, offset=273446912, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.380 D clip_model_loader: tensor[156]: n_dims = 1, name = v.blk.9.attn_v.bias, tensor_size=4096, offset=275544064, shape:[1024, 1, 1, 1], type = f32
+0.01.577.391 D clip_model_loader: tensor[157]: n_dims = 2, name = v.blk.9.attn_q.weight, tensor_size=2097152, offset=275548160, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.398 D clip_model_loader: tensor[158]: n_dims = 1, name = v.blk.9.attn_q.bias, tensor_size=4096, offset=277645312, shape:[1024, 1, 1, 1], type = f32
+0.01.577.403 D clip_model_loader: tensor[159]: n_dims = 2, name = v.blk.9.attn_out.weight, tensor_size=2097152, offset=277649408, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.409 D clip_model_loader: tensor[160]: n_dims = 1, name = v.blk.9.attn_out.bias, tensor_size=4096, offset=279746560, shape:[1024, 1, 1, 1], type = f32
+0.01.577.420 D clip_model_loader: tensor[161]: n_dims = 1, name = v.blk.9.ln1.weight, tensor_size=4096, offset=279750656, shape:[1024, 1, 1, 1], type = f32
+0.01.577.426 D clip_model_loader: tensor[162]: n_dims = 1, name = v.blk.9.ln1.bias, tensor_size=4096, offset=279754752, shape:[1024, 1, 1, 1], type = f32
+0.01.577.465 D clip_model_loader: tensor[163]: n_dims = 2, name = v.blk.9.ffn_down.weight, tensor_size=8388608, offset=279758848, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.479 D clip_model_loader: tensor[164]: n_dims = 1, name = v.blk.9.ffn_down.bias, tensor_size=16384, offset=288147456, shape:[4096, 1, 1, 1], type = f32
+0.01.577.484 D clip_model_loader: tensor[165]: n_dims = 2, name = v.blk.9.ffn_up.weight, tensor_size=8388608, offset=288163840, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.491 D clip_model_loader: tensor[166]: n_dims = 1, name = v.blk.9.ffn_up.bias, tensor_size=4096, offset=296552448, shape:[1024, 1, 1, 1], type = f32
+0.01.577.496 D clip_model_loader: tensor[167]: n_dims = 1, name = v.blk.9.ln2.weight, tensor_size=4096, offset=296556544, shape:[1024, 1, 1, 1], type = f32
+0.01.577.501 D clip_model_loader: tensor[168]: n_dims = 1, name = v.blk.9.ln2.bias, tensor_size=4096, offset=296560640, shape:[1024, 1, 1, 1], type = f32
+0.01.577.507 D clip_model_loader: tensor[169]: n_dims = 2, name = v.blk.10.attn_k.weight, tensor_size=2097152, offset=296564736, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.513 D clip_model_loader: tensor[170]: n_dims = 1, name = v.blk.10.attn_k.bias, tensor_size=4096, offset=298661888, shape:[1024, 1, 1, 1], type = f32
+0.01.577.525 D clip_model_loader: tensor[171]: n_dims = 2, name = v.blk.10.attn_v.weight, tensor_size=2097152, offset=298665984, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.532 D clip_model_loader: tensor[172]: n_dims = 1, name = v.blk.10.attn_v.bias, tensor_size=4096, offset=300763136, shape:[1024, 1, 1, 1], type = f32
+0.01.577.538 D clip_model_loader: tensor[173]: n_dims = 2, name = v.blk.10.attn_q.weight, tensor_size=2097152, offset=300767232, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.548 D clip_model_loader: tensor[174]: n_dims = 1, name = v.blk.10.attn_q.bias, tensor_size=4096, offset=302864384, shape:[1024, 1, 1, 1], type = f32
+0.01.577.554 D clip_model_loader: tensor[175]: n_dims = 2, name = v.blk.10.attn_out.weight, tensor_size=2097152, offset=302868480, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.566 D clip_model_loader: tensor[176]: n_dims = 1, name = v.blk.10.attn_out.bias, tensor_size=4096, offset=304965632, shape:[1024, 1, 1, 1], type = f32
+0.01.577.574 D clip_model_loader: tensor[177]: n_dims = 1, name = v.blk.10.ln1.weight, tensor_size=4096, offset=304969728, shape:[1024, 1, 1, 1], type = f32
+0.01.577.581 D clip_model_loader: tensor[178]: n_dims = 1, name = v.blk.10.ln1.bias, tensor_size=4096, offset=304973824, shape:[1024, 1, 1, 1], type = f32
+0.01.577.593 D clip_model_loader: tensor[179]: n_dims = 2, name = v.blk.10.ffn_down.weight, tensor_size=8388608, offset=304977920, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.600 D clip_model_loader: tensor[180]: n_dims = 1, name = v.blk.10.ffn_down.bias, tensor_size=16384, offset=313366528, shape:[4096, 1, 1, 1], type = f32
+0.01.577.605 D clip_model_loader: tensor[181]: n_dims = 2, name = v.blk.10.ffn_up.weight, tensor_size=8388608, offset=313382912, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.614 D clip_model_loader: tensor[182]: n_dims = 1, name = v.blk.10.ffn_up.bias, tensor_size=4096, offset=321771520, shape:[1024, 1, 1, 1], type = f32
+0.01.577.620 D clip_model_loader: tensor[183]: n_dims = 1, name = v.blk.10.ln2.weight, tensor_size=4096, offset=321775616, shape:[1024, 1, 1, 1], type = f32
+0.01.577.633 D clip_model_loader: tensor[184]: n_dims = 1, name = v.blk.10.ln2.bias, tensor_size=4096, offset=321779712, shape:[1024, 1, 1, 1], type = f32
+0.01.577.640 D clip_model_loader: tensor[185]: n_dims = 2, name = v.blk.11.attn_k.weight, tensor_size=2097152, offset=321783808, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.648 D clip_model_loader: tensor[186]: n_dims = 1, name = v.blk.11.attn_k.bias, tensor_size=4096, offset=323880960, shape:[1024, 1, 1, 1], type = f32
+0.01.577.661 D clip_model_loader: tensor[187]: n_dims = 2, name = v.blk.11.attn_v.weight, tensor_size=2097152, offset=323885056, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.668 D clip_model_loader: tensor[188]: n_dims = 1, name = v.blk.11.attn_v.bias, tensor_size=4096, offset=325982208, shape:[1024, 1, 1, 1], type = f32
+0.01.577.680 D clip_model_loader: tensor[189]: n_dims = 2, name = v.blk.11.attn_q.weight, tensor_size=2097152, offset=325986304, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.688 D clip_model_loader: tensor[190]: n_dims = 1, name = v.blk.11.attn_q.bias, tensor_size=4096, offset=328083456, shape:[1024, 1, 1, 1], type = f32
+0.01.577.701 D clip_model_loader: tensor[191]: n_dims = 2, name = v.blk.11.attn_out.weight, tensor_size=2097152, offset=328087552, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.708 D clip_model_loader: tensor[192]: n_dims = 1, name = v.blk.11.attn_out.bias, tensor_size=4096, offset=330184704, shape:[1024, 1, 1, 1], type = f32
+0.01.577.721 D clip_model_loader: tensor[193]: n_dims = 1, name = v.blk.11.ln1.weight, tensor_size=4096, offset=330188800, shape:[1024, 1, 1, 1], type = f32
+0.01.577.729 D clip_model_loader: tensor[194]: n_dims = 1, name = v.blk.11.ln1.bias, tensor_size=4096, offset=330192896, shape:[1024, 1, 1, 1], type = f32
+0.01.577.741 D clip_model_loader: tensor[195]: n_dims = 2, name = v.blk.11.ffn_down.weight, tensor_size=8388608, offset=330196992, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.748 D clip_model_loader: tensor[196]: n_dims = 1, name = v.blk.11.ffn_down.bias, tensor_size=16384, offset=338585600, shape:[4096, 1, 1, 1], type = f32
+0.01.577.761 D clip_model_loader: tensor[197]: n_dims = 2, name = v.blk.11.ffn_up.weight, tensor_size=8388608, offset=338601984, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.767 D clip_model_loader: tensor[198]: n_dims = 1, name = v.blk.11.ffn_up.bias, tensor_size=4096, offset=346990592, shape:[1024, 1, 1, 1], type = f32
+0.01.577.773 D clip_model_loader: tensor[199]: n_dims = 1, name = v.blk.11.ln2.weight, tensor_size=4096, offset=346994688, shape:[1024, 1, 1, 1], type = f32
+0.01.577.785 D clip_model_loader: tensor[200]: n_dims = 1, name = v.blk.11.ln2.bias, tensor_size=4096, offset=346998784, shape:[1024, 1, 1, 1], type = f32
+0.01.577.792 D clip_model_loader: tensor[201]: n_dims = 2, name = v.blk.12.attn_k.weight, tensor_size=2097152, offset=347002880, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.798 D clip_model_loader: tensor[202]: n_dims = 1, name = v.blk.12.attn_k.bias, tensor_size=4096, offset=349100032, shape:[1024, 1, 1, 1], type = f32
+0.01.577.806 D clip_model_loader: tensor[203]: n_dims = 2, name = v.blk.12.attn_v.weight, tensor_size=2097152, offset=349104128, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.818 D clip_model_loader: tensor[204]: n_dims = 1, name = v.blk.12.attn_v.bias, tensor_size=4096, offset=351201280, shape:[1024, 1, 1, 1], type = f32
+0.01.577.825 D clip_model_loader: tensor[205]: n_dims = 2, name = v.blk.12.attn_q.weight, tensor_size=2097152, offset=351205376, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.831 D clip_model_loader: tensor[206]: n_dims = 1, name = v.blk.12.attn_q.bias, tensor_size=4096, offset=353302528, shape:[1024, 1, 1, 1], type = f32
+0.01.577.838 D clip_model_loader: tensor[207]: n_dims = 2, name = v.blk.12.attn_out.weight, tensor_size=2097152, offset=353306624, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.850 D clip_model_loader: tensor[208]: n_dims = 1, name = v.blk.12.attn_out.bias, tensor_size=4096, offset=355403776, shape:[1024, 1, 1, 1], type = f32
+0.01.577.857 D clip_model_loader: tensor[209]: n_dims = 1, name = v.blk.12.ln1.weight, tensor_size=4096, offset=355407872, shape:[1024, 1, 1, 1], type = f32
+0.01.577.863 D clip_model_loader: tensor[210]: n_dims = 1, name = v.blk.12.ln1.bias, tensor_size=4096, offset=355411968, shape:[1024, 1, 1, 1], type = f32
+0.01.577.876 D clip_model_loader: tensor[211]: n_dims = 2, name = v.blk.12.ffn_down.weight, tensor_size=8388608, offset=355416064, shape:[1024, 4096, 1, 1], type = f16
+0.01.577.896 D clip_model_loader: tensor[212]: n_dims = 1, name = v.blk.12.ffn_down.bias, tensor_size=16384, offset=363804672, shape:[4096, 1, 1, 1], type = f32
+0.01.577.901 D clip_model_loader: tensor[213]: n_dims = 2, name = v.blk.12.ffn_up.weight, tensor_size=8388608, offset=363821056, shape:[4096, 1024, 1, 1], type = f16
+0.01.577.913 D clip_model_loader: tensor[214]: n_dims = 1, name = v.blk.12.ffn_up.bias, tensor_size=4096, offset=372209664, shape:[1024, 1, 1, 1], type = f32
+0.01.577.919 D clip_model_loader: tensor[215]: n_dims = 1, name = v.blk.12.ln2.weight, tensor_size=4096, offset=372213760, shape:[1024, 1, 1, 1], type = f32
+0.01.577.926 D clip_model_loader: tensor[216]: n_dims = 1, name = v.blk.12.ln2.bias, tensor_size=4096, offset=372217856, shape:[1024, 1, 1, 1], type = f32
+0.01.577.937 D clip_model_loader: tensor[217]: n_dims = 2, name = v.blk.13.attn_k.weight, tensor_size=2097152, offset=372221952, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.943 D clip_model_loader: tensor[218]: n_dims = 1, name = v.blk.13.attn_k.bias, tensor_size=4096, offset=374319104, shape:[1024, 1, 1, 1], type = f32
+0.01.577.949 D clip_model_loader: tensor[219]: n_dims = 2, name = v.blk.13.attn_v.weight, tensor_size=2097152, offset=374323200, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.961 D clip_model_loader: tensor[220]: n_dims = 1, name = v.blk.13.attn_v.bias, tensor_size=4096, offset=376420352, shape:[1024, 1, 1, 1], type = f32
+0.01.577.967 D clip_model_loader: tensor[221]: n_dims = 2, name = v.blk.13.attn_q.weight, tensor_size=2097152, offset=376424448, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.975 D clip_model_loader: tensor[222]: n_dims = 1, name = v.blk.13.attn_q.bias, tensor_size=4096, offset=378521600, shape:[1024, 1, 1, 1], type = f32
+0.01.577.987 D clip_model_loader: tensor[223]: n_dims = 2, name = v.blk.13.attn_out.weight, tensor_size=2097152, offset=378525696, shape:[1024, 1024, 1, 1], type = f16
+0.01.577.994 D clip_model_loader: tensor[224]: n_dims = 1, name = v.blk.13.attn_out.bias, tensor_size=4096, offset=380622848, shape:[1024, 1, 1, 1], type = f32
+0.01.578.005 D clip_model_loader: tensor[225]: n_dims = 1, name = v.blk.13.ln1.weight, tensor_size=4096, offset=380626944, shape:[1024, 1, 1, 1], type = f32
+0.01.578.012 D clip_model_loader: tensor[226]: n_dims = 1, name = v.blk.13.ln1.bias, tensor_size=4096, offset=380631040, shape:[1024, 1, 1, 1], type = f32
+0.01.578.018 D clip_model_loader: tensor[227]: n_dims = 2, name = v.blk.13.ffn_down.weight, tensor_size=8388608, offset=380635136, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.029 D clip_model_loader: tensor[228]: n_dims = 1, name = v.blk.13.ffn_down.bias, tensor_size=16384, offset=389023744, shape:[4096, 1, 1, 1], type = f32
+0.01.578.036 D clip_model_loader: tensor[229]: n_dims = 2, name = v.blk.13.ffn_up.weight, tensor_size=8388608, offset=389040128, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.042 D clip_model_loader: tensor[230]: n_dims = 1, name = v.blk.13.ffn_up.bias, tensor_size=4096, offset=397428736, shape:[1024, 1, 1, 1], type = f32
+0.01.578.053 D clip_model_loader: tensor[231]: n_dims = 1, name = v.blk.13.ln2.weight, tensor_size=4096, offset=397432832, shape:[1024, 1, 1, 1], type = f32
+0.01.578.060 D clip_model_loader: tensor[232]: n_dims = 1, name = v.blk.13.ln2.bias, tensor_size=4096, offset=397436928, shape:[1024, 1, 1, 1], type = f32
+0.01.578.073 D clip_model_loader: tensor[233]: n_dims = 2, name = v.blk.14.attn_k.weight, tensor_size=2097152, offset=397441024, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.082 D clip_model_loader: tensor[234]: n_dims = 1, name = v.blk.14.attn_k.bias, tensor_size=4096, offset=399538176, shape:[1024, 1, 1, 1], type = f32
+0.01.578.087 D clip_model_loader: tensor[235]: n_dims = 2, name = v.blk.14.attn_v.weight, tensor_size=2097152, offset=399542272, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.092 D clip_model_loader: tensor[236]: n_dims = 1, name = v.blk.14.attn_v.bias, tensor_size=4096, offset=401639424, shape:[1024, 1, 1, 1], type = f32
+0.01.578.098 D clip_model_loader: tensor[237]: n_dims = 2, name = v.blk.14.attn_q.weight, tensor_size=2097152, offset=401643520, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.104 D clip_model_loader: tensor[238]: n_dims = 1, name = v.blk.14.attn_q.bias, tensor_size=4096, offset=403740672, shape:[1024, 1, 1, 1], type = f32
+0.01.578.108 D clip_model_loader: tensor[239]: n_dims = 2, name = v.blk.14.attn_out.weight, tensor_size=2097152, offset=403744768, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.115 D clip_model_loader: tensor[240]: n_dims = 1, name = v.blk.14.attn_out.bias, tensor_size=4096, offset=405841920, shape:[1024, 1, 1, 1], type = f32
+0.01.578.121 D clip_model_loader: tensor[241]: n_dims = 1, name = v.blk.14.ln1.weight, tensor_size=4096, offset=405846016, shape:[1024, 1, 1, 1], type = f32
+0.01.578.127 D clip_model_loader: tensor[242]: n_dims = 1, name = v.blk.14.ln1.bias, tensor_size=4096, offset=405850112, shape:[1024, 1, 1, 1], type = f32
+0.01.578.133 D clip_model_loader: tensor[243]: n_dims = 2, name = v.blk.14.ffn_down.weight, tensor_size=8388608, offset=405854208, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.139 D clip_model_loader: tensor[244]: n_dims = 1, name = v.blk.14.ffn_down.bias, tensor_size=16384, offset=414242816, shape:[4096, 1, 1, 1], type = f32
+0.01.578.146 D clip_model_loader: tensor[245]: n_dims = 2, name = v.blk.14.ffn_up.weight, tensor_size=8388608, offset=414259200, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.157 D clip_model_loader: tensor[246]: n_dims = 1, name = v.blk.14.ffn_up.bias, tensor_size=4096, offset=422647808, shape:[1024, 1, 1, 1], type = f32
+0.01.578.164 D clip_model_loader: tensor[247]: n_dims = 1, name = v.blk.14.ln2.weight, tensor_size=4096, offset=422651904, shape:[1024, 1, 1, 1], type = f32
+0.01.578.170 D clip_model_loader: tensor[248]: n_dims = 1, name = v.blk.14.ln2.bias, tensor_size=4096, offset=422656000, shape:[1024, 1, 1, 1], type = f32
+0.01.578.181 D clip_model_loader: tensor[249]: n_dims = 2, name = v.blk.15.attn_k.weight, tensor_size=2097152, offset=422660096, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.189 D clip_model_loader: tensor[250]: n_dims = 1, name = v.blk.15.attn_k.bias, tensor_size=4096, offset=424757248, shape:[1024, 1, 1, 1], type = f32
+0.01.578.201 D clip_model_loader: tensor[251]: n_dims = 2, name = v.blk.15.attn_v.weight, tensor_size=2097152, offset=424761344, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.207 D clip_model_loader: tensor[252]: n_dims = 1, name = v.blk.15.attn_v.bias, tensor_size=4096, offset=426858496, shape:[1024, 1, 1, 1], type = f32
+0.01.578.214 D clip_model_loader: tensor[253]: n_dims = 2, name = v.blk.15.attn_q.weight, tensor_size=2097152, offset=426862592, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.225 D clip_model_loader: tensor[254]: n_dims = 1, name = v.blk.15.attn_q.bias, tensor_size=4096, offset=428959744, shape:[1024, 1, 1, 1], type = f32
+0.01.578.232 D clip_model_loader: tensor[255]: n_dims = 2, name = v.blk.15.attn_out.weight, tensor_size=2097152, offset=428963840, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.240 D clip_model_loader: tensor[256]: n_dims = 1, name = v.blk.15.attn_out.bias, tensor_size=4096, offset=431060992, shape:[1024, 1, 1, 1], type = f32
+0.01.578.252 D clip_model_loader: tensor[257]: n_dims = 1, name = v.blk.15.ln1.weight, tensor_size=4096, offset=431065088, shape:[1024, 1, 1, 1], type = f32
+0.01.578.260 D clip_model_loader: tensor[258]: n_dims = 1, name = v.blk.15.ln1.bias, tensor_size=4096, offset=431069184, shape:[1024, 1, 1, 1], type = f32
+0.01.578.271 D clip_model_loader: tensor[259]: n_dims = 2, name = v.blk.15.ffn_down.weight, tensor_size=8388608, offset=431073280, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.280 D clip_model_loader: tensor[260]: n_dims = 1, name = v.blk.15.ffn_down.bias, tensor_size=16384, offset=439461888, shape:[4096, 1, 1, 1], type = f32
+0.01.578.291 D clip_model_loader: tensor[261]: n_dims = 2, name = v.blk.15.ffn_up.weight, tensor_size=8388608, offset=439478272, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.299 D clip_model_loader: tensor[262]: n_dims = 1, name = v.blk.15.ffn_up.bias, tensor_size=4096, offset=447866880, shape:[1024, 1, 1, 1], type = f32
+0.01.578.311 D clip_model_loader: tensor[263]: n_dims = 1, name = v.blk.15.ln2.weight, tensor_size=4096, offset=447870976, shape:[1024, 1, 1, 1], type = f32
+0.01.578.317 D clip_model_loader: tensor[264]: n_dims = 1, name = v.blk.15.ln2.bias, tensor_size=4096, offset=447875072, shape:[1024, 1, 1, 1], type = f32
+0.01.578.325 D clip_model_loader: tensor[265]: n_dims = 2, name = v.blk.16.attn_k.weight, tensor_size=2097152, offset=447879168, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.336 D clip_model_loader: tensor[266]: n_dims = 1, name = v.blk.16.attn_k.bias, tensor_size=4096, offset=449976320, shape:[1024, 1, 1, 1], type = f32
+0.01.578.343 D clip_model_loader: tensor[267]: n_dims = 2, name = v.blk.16.attn_v.weight, tensor_size=2097152, offset=449980416, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.350 D clip_model_loader: tensor[268]: n_dims = 1, name = v.blk.16.attn_v.bias, tensor_size=4096, offset=452077568, shape:[1024, 1, 1, 1], type = f32
+0.01.578.362 D clip_model_loader: tensor[269]: n_dims = 2, name = v.blk.16.attn_q.weight, tensor_size=2097152, offset=452081664, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.369 D clip_model_loader: tensor[270]: n_dims = 1, name = v.blk.16.attn_q.bias, tensor_size=4096, offset=454178816, shape:[1024, 1, 1, 1], type = f32
+0.01.578.376 D clip_model_loader: tensor[271]: n_dims = 2, name = v.blk.16.attn_out.weight, tensor_size=2097152, offset=454182912, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.389 D clip_model_loader: tensor[272]: n_dims = 1, name = v.blk.16.attn_out.bias, tensor_size=4096, offset=456280064, shape:[1024, 1, 1, 1], type = f32
+0.01.578.397 D clip_model_loader: tensor[273]: n_dims = 1, name = v.blk.16.ln1.weight, tensor_size=4096, offset=456284160, shape:[1024, 1, 1, 1], type = f32
+0.01.578.407 D clip_model_loader: tensor[274]: n_dims = 1, name = v.blk.16.ln1.bias, tensor_size=4096, offset=456288256, shape:[1024, 1, 1, 1], type = f32
+0.01.578.415 D clip_model_loader: tensor[275]: n_dims = 2, name = v.blk.16.ffn_down.weight, tensor_size=8388608, offset=456292352, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.423 D clip_model_loader: tensor[276]: n_dims = 1, name = v.blk.16.ffn_down.bias, tensor_size=16384, offset=464680960, shape:[4096, 1, 1, 1], type = f32
+0.01.578.448 D clip_model_loader: tensor[277]: n_dims = 2, name = v.blk.16.ffn_up.weight, tensor_size=8388608, offset=464697344, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.454 D clip_model_loader: tensor[278]: n_dims = 1, name = v.blk.16.ffn_up.bias, tensor_size=4096, offset=473085952, shape:[1024, 1, 1, 1], type = f32
+0.01.578.459 D clip_model_loader: tensor[279]: n_dims = 1, name = v.blk.16.ln2.weight, tensor_size=4096, offset=473090048, shape:[1024, 1, 1, 1], type = f32
+0.01.578.465 D clip_model_loader: tensor[280]: n_dims = 1, name = v.blk.16.ln2.bias, tensor_size=4096, offset=473094144, shape:[1024, 1, 1, 1], type = f32
+0.01.578.475 D clip_model_loader: tensor[281]: n_dims = 2, name = v.blk.17.attn_k.weight, tensor_size=2097152, offset=473098240, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.480 D clip_model_loader: tensor[282]: n_dims = 1, name = v.blk.17.attn_k.bias, tensor_size=4096, offset=475195392, shape:[1024, 1, 1, 1], type = f32
+0.01.578.488 D clip_model_loader: tensor[283]: n_dims = 2, name = v.blk.17.attn_v.weight, tensor_size=2097152, offset=475199488, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.494 D clip_model_loader: tensor[284]: n_dims = 1, name = v.blk.17.attn_v.bias, tensor_size=4096, offset=477296640, shape:[1024, 1, 1, 1], type = f32
+0.01.578.501 D clip_model_loader: tensor[285]: n_dims = 2, name = v.blk.17.attn_q.weight, tensor_size=2097152, offset=477300736, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.507 D clip_model_loader: tensor[286]: n_dims = 1, name = v.blk.17.attn_q.bias, tensor_size=4096, offset=479397888, shape:[1024, 1, 1, 1], type = f32
+0.01.578.514 D clip_model_loader: tensor[287]: n_dims = 2, name = v.blk.17.attn_out.weight, tensor_size=2097152, offset=479401984, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.521 D clip_model_loader: tensor[288]: n_dims = 1, name = v.blk.17.attn_out.bias, tensor_size=4096, offset=481499136, shape:[1024, 1, 1, 1], type = f32
+0.01.578.527 D clip_model_loader: tensor[289]: n_dims = 1, name = v.blk.17.ln1.weight, tensor_size=4096, offset=481503232, shape:[1024, 1, 1, 1], type = f32
+0.01.578.534 D clip_model_loader: tensor[290]: n_dims = 1, name = v.blk.17.ln1.bias, tensor_size=4096, offset=481507328, shape:[1024, 1, 1, 1], type = f32
+0.01.578.541 D clip_model_loader: tensor[291]: n_dims = 2, name = v.blk.17.ffn_down.weight, tensor_size=8388608, offset=481511424, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.548 D clip_model_loader: tensor[292]: n_dims = 1, name = v.blk.17.ffn_down.bias, tensor_size=16384, offset=489900032, shape:[4096, 1, 1, 1], type = f32
+0.01.578.556 D clip_model_loader: tensor[293]: n_dims = 2, name = v.blk.17.ffn_up.weight, tensor_size=8388608, offset=489916416, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.573 D clip_model_loader: tensor[294]: n_dims = 1, name = v.blk.17.ffn_up.bias, tensor_size=4096, offset=498305024, shape:[1024, 1, 1, 1], type = f32
+0.01.578.578 D clip_model_loader: tensor[295]: n_dims = 1, name = v.blk.17.ln2.weight, tensor_size=4096, offset=498309120, shape:[1024, 1, 1, 1], type = f32
+0.01.578.583 D clip_model_loader: tensor[296]: n_dims = 1, name = v.blk.17.ln2.bias, tensor_size=4096, offset=498313216, shape:[1024, 1, 1, 1], type = f32
+0.01.578.590 D clip_model_loader: tensor[297]: n_dims = 2, name = v.blk.18.attn_k.weight, tensor_size=2097152, offset=498317312, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.597 D clip_model_loader: tensor[298]: n_dims = 1, name = v.blk.18.attn_k.bias, tensor_size=4096, offset=500414464, shape:[1024, 1, 1, 1], type = f32
+0.01.578.604 D clip_model_loader: tensor[299]: n_dims = 2, name = v.blk.18.attn_v.weight, tensor_size=2097152, offset=500418560, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.610 D clip_model_loader: tensor[300]: n_dims = 1, name = v.blk.18.attn_v.bias, tensor_size=4096, offset=502515712, shape:[1024, 1, 1, 1], type = f32
+0.01.578.617 D clip_model_loader: tensor[301]: n_dims = 2, name = v.blk.18.attn_q.weight, tensor_size=2097152, offset=502519808, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.623 D clip_model_loader: tensor[302]: n_dims = 1, name = v.blk.18.attn_q.bias, tensor_size=4096, offset=504616960, shape:[1024, 1, 1, 1], type = f32
+0.01.578.634 D clip_model_loader: tensor[303]: n_dims = 2, name = v.blk.18.attn_out.weight, tensor_size=2097152, offset=504621056, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.641 D clip_model_loader: tensor[304]: n_dims = 1, name = v.blk.18.attn_out.bias, tensor_size=4096, offset=506718208, shape:[1024, 1, 1, 1], type = f32
+0.01.578.648 D clip_model_loader: tensor[305]: n_dims = 1, name = v.blk.18.ln1.weight, tensor_size=4096, offset=506722304, shape:[1024, 1, 1, 1], type = f32
+0.01.578.661 D clip_model_loader: tensor[306]: n_dims = 1, name = v.blk.18.ln1.bias, tensor_size=4096, offset=506726400, shape:[1024, 1, 1, 1], type = f32
+0.01.578.669 D clip_model_loader: tensor[307]: n_dims = 2, name = v.blk.18.ffn_down.weight, tensor_size=8388608, offset=506730496, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.681 D clip_model_loader: tensor[308]: n_dims = 1, name = v.blk.18.ffn_down.bias, tensor_size=16384, offset=515119104, shape:[4096, 1, 1, 1], type = f32
+0.01.578.690 D clip_model_loader: tensor[309]: n_dims = 2, name = v.blk.18.ffn_up.weight, tensor_size=8388608, offset=515135488, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.701 D clip_model_loader: tensor[310]: n_dims = 1, name = v.blk.18.ffn_up.bias, tensor_size=4096, offset=523524096, shape:[1024, 1, 1, 1], type = f32
+0.01.578.710 D clip_model_loader: tensor[311]: n_dims = 1, name = v.blk.18.ln2.weight, tensor_size=4096, offset=523528192, shape:[1024, 1, 1, 1], type = f32
+0.01.578.721 D clip_model_loader: tensor[312]: n_dims = 1, name = v.blk.18.ln2.bias, tensor_size=4096, offset=523532288, shape:[1024, 1, 1, 1], type = f32
+0.01.578.730 D clip_model_loader: tensor[313]: n_dims = 2, name = v.blk.19.attn_k.weight, tensor_size=2097152, offset=523536384, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.741 D clip_model_loader: tensor[314]: n_dims = 1, name = v.blk.19.attn_k.bias, tensor_size=4096, offset=525633536, shape:[1024, 1, 1, 1], type = f32
+0.01.578.750 D clip_model_loader: tensor[315]: n_dims = 2, name = v.blk.19.attn_v.weight, tensor_size=2097152, offset=525637632, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.763 D clip_model_loader: tensor[316]: n_dims = 1, name = v.blk.19.attn_v.bias, tensor_size=4096, offset=527734784, shape:[1024, 1, 1, 1], type = f32
+0.01.578.771 D clip_model_loader: tensor[317]: n_dims = 2, name = v.blk.19.attn_q.weight, tensor_size=2097152, offset=527738880, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.782 D clip_model_loader: tensor[318]: n_dims = 1, name = v.blk.19.attn_q.bias, tensor_size=4096, offset=529836032, shape:[1024, 1, 1, 1], type = f32
+0.01.578.789 D clip_model_loader: tensor[319]: n_dims = 2, name = v.blk.19.attn_out.weight, tensor_size=2097152, offset=529840128, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.798 D clip_model_loader: tensor[320]: n_dims = 1, name = v.blk.19.attn_out.bias, tensor_size=4096, offset=531937280, shape:[1024, 1, 1, 1], type = f32
+0.01.578.826 D clip_model_loader: tensor[321]: n_dims = 1, name = v.blk.19.ln1.weight, tensor_size=4096, offset=531941376, shape:[1024, 1, 1, 1], type = f32
+0.01.578.836 D clip_model_loader: tensor[322]: n_dims = 1, name = v.blk.19.ln1.bias, tensor_size=4096, offset=531945472, shape:[1024, 1, 1, 1], type = f32
+0.01.578.850 D clip_model_loader: tensor[323]: n_dims = 2, name = v.blk.19.ffn_down.weight, tensor_size=8388608, offset=531949568, shape:[1024, 4096, 1, 1], type = f16
+0.01.578.864 D clip_model_loader: tensor[324]: n_dims = 1, name = v.blk.19.ffn_down.bias, tensor_size=16384, offset=540338176, shape:[4096, 1, 1, 1], type = f32
+0.01.578.876 D clip_model_loader: tensor[325]: n_dims = 2, name = v.blk.19.ffn_up.weight, tensor_size=8388608, offset=540354560, shape:[4096, 1024, 1, 1], type = f16
+0.01.578.887 D clip_model_loader: tensor[326]: n_dims = 1, name = v.blk.19.ffn_up.bias, tensor_size=4096, offset=548743168, shape:[1024, 1, 1, 1], type = f32
+0.01.578.893 D clip_model_loader: tensor[327]: n_dims = 1, name = v.blk.19.ln2.weight, tensor_size=4096, offset=548747264, shape:[1024, 1, 1, 1], type = f32
+0.01.578.909 D clip_model_loader: tensor[328]: n_dims = 1, name = v.blk.19.ln2.bias, tensor_size=4096, offset=548751360, shape:[1024, 1, 1, 1], type = f32
+0.01.578.921 D clip_model_loader: tensor[329]: n_dims = 2, name = v.blk.20.attn_k.weight, tensor_size=2097152, offset=548755456, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.928 D clip_model_loader: tensor[330]: n_dims = 1, name = v.blk.20.attn_k.bias, tensor_size=4096, offset=550852608, shape:[1024, 1, 1, 1], type = f32
+0.01.578.955 D clip_model_loader: tensor[331]: n_dims = 2, name = v.blk.20.attn_v.weight, tensor_size=2097152, offset=550856704, shape:[1024, 1024, 1, 1], type = f16
+0.01.578.968 D clip_model_loader: tensor[332]: n_dims = 1, name = v.blk.20.attn_v.bias, tensor_size=4096, offset=552953856, shape:[1024, 1, 1, 1], type = f32
+0.01.579.000 D clip_model_loader: tensor[333]: n_dims = 2, name = v.blk.20.attn_q.weight, tensor_size=2097152, offset=552957952, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.013 D clip_model_loader: tensor[334]: n_dims = 1, name = v.blk.20.attn_q.bias, tensor_size=4096, offset=555055104, shape:[1024, 1, 1, 1], type = f32
+0.01.579.028 D clip_model_loader: tensor[335]: n_dims = 2, name = v.blk.20.attn_out.weight, tensor_size=2097152, offset=555059200, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.043 D clip_model_loader: tensor[336]: n_dims = 1, name = v.blk.20.attn_out.bias, tensor_size=4096, offset=557156352, shape:[1024, 1, 1, 1], type = f32
+0.01.579.053 D clip_model_loader: tensor[337]: n_dims = 1, name = v.blk.20.ln1.weight, tensor_size=4096, offset=557160448, shape:[1024, 1, 1, 1], type = f32
+0.01.579.073 D clip_model_loader: tensor[338]: n_dims = 1, name = v.blk.20.ln1.bias, tensor_size=4096, offset=557164544, shape:[1024, 1, 1, 1], type = f32
+0.01.579.088 D clip_model_loader: tensor[339]: n_dims = 2, name = v.blk.20.ffn_down.weight, tensor_size=8388608, offset=557168640, shape:[1024, 4096, 1, 1], type = f16
+0.01.579.099 D clip_model_loader: tensor[340]: n_dims = 1, name = v.blk.20.ffn_down.bias, tensor_size=16384, offset=565557248, shape:[4096, 1, 1, 1], type = f32
+0.01.579.111 D clip_model_loader: tensor[341]: n_dims = 2, name = v.blk.20.ffn_up.weight, tensor_size=8388608, offset=565573632, shape:[4096, 1024, 1, 1], type = f16
+0.01.579.122 D clip_model_loader: tensor[342]: n_dims = 1, name = v.blk.20.ffn_up.bias, tensor_size=4096, offset=573962240, shape:[1024, 1, 1, 1], type = f32
+0.01.579.138 D clip_model_loader: tensor[343]: n_dims = 1, name = v.blk.20.ln2.weight, tensor_size=4096, offset=573966336, shape:[1024, 1, 1, 1], type = f32
+0.01.579.147 D clip_model_loader: tensor[344]: n_dims = 1, name = v.blk.20.ln2.bias, tensor_size=4096, offset=573970432, shape:[1024, 1, 1, 1], type = f32
+0.01.579.160 D clip_model_loader: tensor[345]: n_dims = 2, name = v.blk.21.attn_k.weight, tensor_size=2097152, offset=573974528, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.170 D clip_model_loader: tensor[346]: n_dims = 1, name = v.blk.21.attn_k.bias, tensor_size=4096, offset=576071680, shape:[1024, 1, 1, 1], type = f32
+0.01.579.184 D clip_model_loader: tensor[347]: n_dims = 2, name = v.blk.21.attn_v.weight, tensor_size=2097152, offset=576075776, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.194 D clip_model_loader: tensor[348]: n_dims = 1, name = v.blk.21.attn_v.bias, tensor_size=4096, offset=578172928, shape:[1024, 1, 1, 1], type = f32
+0.01.579.207 D clip_model_loader: tensor[349]: n_dims = 2, name = v.blk.21.attn_q.weight, tensor_size=2097152, offset=578177024, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.218 D clip_model_loader: tensor[350]: n_dims = 1, name = v.blk.21.attn_q.bias, tensor_size=4096, offset=580274176, shape:[1024, 1, 1, 1], type = f32
+0.01.579.233 D clip_model_loader: tensor[351]: n_dims = 2, name = v.blk.21.attn_out.weight, tensor_size=2097152, offset=580278272, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.243 D clip_model_loader: tensor[352]: n_dims = 1, name = v.blk.21.attn_out.bias, tensor_size=4096, offset=582375424, shape:[1024, 1, 1, 1], type = f32
+0.01.579.265 D clip_model_loader: tensor[353]: n_dims = 1, name = v.blk.21.ln1.weight, tensor_size=4096, offset=582379520, shape:[1024, 1, 1, 1], type = f32
+0.01.579.274 D clip_model_loader: tensor[354]: n_dims = 1, name = v.blk.21.ln1.bias, tensor_size=4096, offset=582383616, shape:[1024, 1, 1, 1], type = f32
+0.01.579.283 D clip_model_loader: tensor[355]: n_dims = 2, name = v.blk.21.ffn_down.weight, tensor_size=8388608, offset=582387712, shape:[1024, 4096, 1, 1], type = f16
+0.01.579.298 D clip_model_loader: tensor[356]: n_dims = 1, name = v.blk.21.ffn_down.bias, tensor_size=16384, offset=590776320, shape:[4096, 1, 1, 1], type = f32
+0.01.579.308 D clip_model_loader: tensor[357]: n_dims = 2, name = v.blk.21.ffn_up.weight, tensor_size=8388608, offset=590792704, shape:[4096, 1024, 1, 1], type = f16
+0.01.579.322 D clip_model_loader: tensor[358]: n_dims = 1, name = v.blk.21.ffn_up.bias, tensor_size=4096, offset=599181312, shape:[1024, 1, 1, 1], type = f32
+0.01.579.330 D clip_model_loader: tensor[359]: n_dims = 1, name = v.blk.21.ln2.weight, tensor_size=4096, offset=599185408, shape:[1024, 1, 1, 1], type = f32
+0.01.579.348 D clip_model_loader: tensor[360]: n_dims = 1, name = v.blk.21.ln2.bias, tensor_size=4096, offset=599189504, shape:[1024, 1, 1, 1], type = f32
+0.01.579.357 D clip_model_loader: tensor[361]: n_dims = 2, name = v.blk.22.attn_k.weight, tensor_size=2097152, offset=599193600, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.369 D clip_model_loader: tensor[362]: n_dims = 1, name = v.blk.22.attn_k.bias, tensor_size=4096, offset=601290752, shape:[1024, 1, 1, 1], type = f32
+0.01.579.380 D clip_model_loader: tensor[363]: n_dims = 2, name = v.blk.22.attn_v.weight, tensor_size=2097152, offset=601294848, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.395 D clip_model_loader: tensor[364]: n_dims = 1, name = v.blk.22.attn_v.bias, tensor_size=4096, offset=603392000, shape:[1024, 1, 1, 1], type = f32
+0.01.579.405 D clip_model_loader: tensor[365]: n_dims = 2, name = v.blk.22.attn_q.weight, tensor_size=2097152, offset=603396096, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.418 D clip_model_loader: tensor[366]: n_dims = 1, name = v.blk.22.attn_q.bias, tensor_size=4096, offset=605493248, shape:[1024, 1, 1, 1], type = f32
+0.01.579.427 D clip_model_loader: tensor[367]: n_dims = 2, name = v.blk.22.attn_out.weight, tensor_size=2097152, offset=605497344, shape:[1024, 1024, 1, 1], type = f16
+0.01.579.450 D clip_model_loader: tensor[368]: n_dims = 1, name = v.blk.22.attn_out.bias, tensor_size=4096, offset=607594496, shape:[1024, 1, 1, 1], type = f32
+0.01.579.457 D clip_model_loader: tensor[369]: n_dims = 1, name = v.blk.22.ln1.weight, tensor_size=4096, offset=607598592, shape:[1024, 1, 1, 1], type = f32
+0.01.579.464 D clip_model_loader: tensor[370]: n_dims = 1, name = v.blk.22.ln1.bias, tensor_size=4096, offset=607602688, shape:[1024, 1, 1, 1], type = f32
+0.01.579.473 D clip_model_loader: tensor[371]: n_dims = 2, name = v.blk.22.ffn_down.weight, tensor_size=8388608, offset=607606784, shape:[1024, 4096, 1, 1], type = f16
+0.01.579.482 D clip_model_loader: tensor[372]: n_dims = 1, name = v.blk.22.ffn_down.bias, tensor_size=16384, offset=615995392, shape:[4096, 1, 1, 1], type = f32
+0.01.579.491 D clip_model_loader: tensor[373]: n_dims = 2, name = v.blk.22.ffn_up.weight, tensor_size=8388608, offset=616011776, shape:[4096, 1024, 1, 1], type = f16
+0.01.579.500 D clip_model_loader: tensor[374]: n_dims = 1, name = v.blk.22.ffn_up.bias, tensor_size=4096, offset=624400384, shape:[1024, 1, 1, 1], type = f32
+0.01.579.509 D clip_model_loader: tensor[375]: n_dims = 1, name = v.blk.22.ln2.weight, tensor_size=4096, offset=624404480, shape:[1024, 1, 1, 1], type = f32
+0.01.579.519 D clip_model_loader: tensor[376]: n_dims = 1, name = v.blk.22.ln2.bias, tensor_size=4096, offset=624408576, shape:[1024, 1, 1, 1], type = f32
+0.01.579.890 I clip_ctx: CLIP using CUDA0 backend
+0.01.580.611 I load_hparams: projector:          mlp
+0.01.580.618 I load_hparams: n_embd:             1024
+0.01.580.618 I load_hparams: n_head:             16
+0.01.580.619 I load_hparams: n_ff:               4096
+0.01.580.619 I load_hparams: n_layer:            23
+0.01.580.620 I load_hparams: ffn_op:             gelu_quick
+0.01.580.620 I load_hparams: projection_dim:     768
+0.01.580.621 I 
+--- vision hparams ---
+0.01.580.621 I load_hparams: image_size:         336
+0.01.580.638 I load_hparams: patch_size:         14
+0.01.580.638 I load_hparams: has_llava_proj:     1
+0.01.580.639 I load_hparams: minicpmv_version:   0
+0.01.580.639 I load_hparams: n_merge:            1
+0.01.580.640 I load_hparams: n_wa_pattern: 0
+0.01.580.640 I 
+0.01.580.644 I load_hparams: model size:         595.49 MiB
+0.01.580.647 I load_hparams: metadata size:      0.13 MiB
+0.01.580.963 W load_tensors: ffn up/down are swapped
+0.01.870.170 D load_tensors: loaded 377 tensors from /kaggle/working/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf
+0.01.873.949 I get_dummy_batch: warmup with image size = 336 x 336
+0.01.874.908 I get_dummy_batch: warmup with image size = 336 x 336
+0.01.875.674 D ggml_cuda_graph_set_enabled: disabling CUDA graphs due to GPU architecture
+0.01.876.323 I reserve_compute_meta:      CUDA0 compute buffer size =    21.55 MiB
+0.01.876.335 I reserve_compute_meta:        CPU compute buffer size =     1.30 MiB
+0.01.876.339 I reserve_compute_meta: graph splits = 1, nodes = 736
+0.01.876.387 I warmup: flash attention is enabled
+0.01.876.504 I main: loading model: /kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf
+0.01.876.635 W WARN: This is an experimental CLI for testing multimodal capability.
+0.01.876.640 W       For normal use cases, please use the standard llama-cli
+0.01.882.074 D chat_add_and_format: new_msg.role='user', new_msg.content='<__media__>Describe the image in detail.'
+0.01.882.107 D formatted_chat.prompt: USER: <__media__>Describe the image in detail.
+ASSISTANT:
+0.01.882.125 D add_text: USER: 
+0.01.918.835 D add_media: preproc_out has 1 entries, grid_x = 0, grid_y = 0, has_overview = 0
+0.01.918.853 D image_tokens->nx = 576
+0.01.918.854 D image_tokens->ny = 1
+0.01.918.854 D batch_f32 size = 1
+0.01.918.858 D add_text: Describe the image in detail.
+ASSISTANT:
+0.01.924.797 I encoding mtmd batch, n_chunks = 1 (done = 1, total = 3)
+0.01.925.737 D mtmd_batch_encode_impl: encoding batch with 1 entries and total 576 tokens
+0.01.932.843 D clip_image_batch_encode: copying image 1/1 to input buffer (nx=336, ny=336)
+0.02.061.445 D clip_image_batch_encode: output embedding shape [4096, 576, 1]
+0.02.063.547 I mtmd batch encoding done in 139 ms
+0.02.063.579 I decoding image batch 1/1, n_tokens_batch = 576
+0.02.184.142 I image decoded (batch 1/1) in 120 ms
+0.03.785.297 I llama_perf_context_print:        load time =    1362.72 ms
+0.03.785.300 I llama_perf_context_print: prompt eval time =    1136.63 ms /   593 tokens (    1.92 ms per token,   521.72 tokens per second)
+0.03.785.302 I llama_perf_context_print:        eval time =     722.29 ms /    31 runs   (   23.30 ms per token,    42.92 tokens per second)
+0.03.785.304 I llama_perf_context_print:       total time =    2210.20 ms /   624 tokens
+0.03.785.304 I llama_perf_context_print:    graphs reused =         31
+0.03.785.860 D ~llama_context:      CUDA0 compute buffer size is 185.0234 MiB, matches expectation of 185.0234 MiB
+0.03.785.867 D ~llama_context:  CUDA_Host compute buffer size is  40.0273 MiB, matches expectation of  40.0273 MiB
+

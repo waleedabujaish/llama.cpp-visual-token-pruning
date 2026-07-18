@@ -1,0 +1,32 @@
+{
+  "tag": "p3_textvqa_kaggle_gpu_keep0.75",
+  "tag_prefix": "p3_textvqa_kaggle_gpu",
+  "timestamp": "20260718-191502",
+  "visual_keep": 0.75,
+  "visual_prune_method": "cls",
+  "platform_tag": "kaggle-gpu-tesla-p100-pcie-16gb",
+  "mode": "server",
+  "llama_cpp": {
+    "build_provenance": {
+      "bin_path": "/kaggle/working/llama.cpp-prune/build/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 1 (82f2ccb)",
+      "bin_commit_short": "82f2ccb",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_CUDA_NO_VMM=ON (offloaded, -ngl 999, Tesla P100-PCIE-16GB)",
+    "model": "/kaggle/working/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "mmproj": "/kaggle/working/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "config": "-n 16 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024, custom vicuna_v1 jinja (prompt parity with the Phase 1 HF baseline), extra_args=['-ngl', '999']"
+  },
+  "dataset": "same pinned 200-sample lmms-lab/textvqa slice as textvqa_llamacpp.py (assets/phase1/textvqa200_manifest.jsonl)",
+  "metric": "soft VQA accuracy, identical scoring code (textvqa_sim.vqa_accuracy)",
+  "n_scored": 200,
+  "n_failed": 0,
+  "acc_mean": 0.5445,
+  "acc_std": 0.47378238675577633,
+  "preds_file": "results/raw/p3_textvqa_kaggle_gpu_keep0.75.preds.jsonl"
+}

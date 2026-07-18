@@ -1,0 +1,350 @@
+{
+  "tag": "p2_sweep_kaggle_gpu_keep0.1",
+  "timestamp": "20260718-190224",
+  "provenance": {
+    "model_repo": "second-state/Llava-v1.5-7B-GGUF",
+    "model_files": [
+      "llava-v1.5-7b-Q4_K_M.gguf",
+      "llava-v1.5-7b-mmproj-model-f16.gguf"
+    ],
+    "substitution_reason": "Originally planned mys/ggml_llava-v1.5-7b fails to load at the pinned llama.cpp commit: its 2023-era mmproj lacks the clip.projector_type GGUF key required by the current loader (clip.cpp:1153). second-state repack is the same LLaVA-1.5-7B weights and is used by llama.cpp's own vision test suite (tools/mtmd/tests.sh:95).",
+    "config_frozen": "Run config frozen 2026-07-17 for all cells incl. pruned runs: -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v. Rationale in NOTES.md. -t 8 = P-cores only (deliberate; E-core/all-core ablation deferred). -ub 1024 keeps the 576-token non-causal image batch in one ubatch."
+  },
+  "command": [
+    "/kaggle/working/llama.cpp-prune/build/bin/llama-mtmd-cli",
+    "-m",
+    "/kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "--mmproj",
+    "/kaggle/working/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "--image",
+    "/kaggle/working/vision_tokens/assets/coco_val2017_000000039769.jpg",
+    "-p",
+    "Describe the image in detail.",
+    "-n",
+    "32",
+    "--temp",
+    "0",
+    "--seed",
+    "42",
+    "-t",
+    "8",
+    "-tb",
+    "8",
+    "-b",
+    "2048",
+    "-ub",
+    "1024",
+    "--perf",
+    "--chat-template",
+    "vicuna",
+    "-v",
+    "--visual-keep",
+    "0.1",
+    "--visual-prune-method",
+    "cls",
+    "-ngl",
+    "999"
+  ],
+  "prompt": "Describe the image in detail.",
+  "config": {
+    "n_predict": 32,
+    "threads": 8,
+    "batch": 2048,
+    "ubatch": 1024,
+    "temp": 0.0,
+    "seed": 42,
+    "warmup_discarded": 1,
+    "timed_runs": 5,
+    "cooldown_s_between_runs": 5.0,
+    "extra_args": [
+      "--visual-keep",
+      "0.1",
+      "--visual-prune-method",
+      "cls",
+      "-ngl",
+      "999"
+    ]
+  },
+  "platform_tag": "kaggle-gpu-tesla-p100-pcie-16gb",
+  "environment": {
+    "llama_cpp_build": {
+      "bin_path": "/kaggle/working/llama.cpp-prune/build/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 1 (82f2ccb)",
+      "bin_commit_short": "82f2ccb",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_CUDA_NO_VMM=ON (offloaded, -ngl 999, Tesla P100-PCIE-16GB)",
+    "cpu": "Intel(R) Xeon(R) CPU @ 2.00GHz",
+    "n_cores": "4",
+    "p_cores": "",
+    "e_cores": "",
+    "mem_bytes": "33659383808",
+    "gpu_name": "Tesla P100-PCIE-16GB",
+    "gpu_mem_total": "16384 MiB",
+    "gpu_driver_version": "580.159.04",
+    "gpu_compute_capability": "6.0",
+    "cuda_toolkit_version": "12.8",
+    "os": "Linux 6.12.90+ (x86_64)",
+    "load_avg_1_5_15_at_start": [
+      0.5498046875,
+      0.541015625,
+      1.59033203125
+    ],
+    "load_avg_1_5_15_at_end": [
+      0.5458984375,
+      0.5478515625,
+      1.52392578125
+    ]
+  },
+  "files": {
+    "model": {
+      "path": "/kaggle/working/vision_tokens/models/llava-v1.5-7b-Q4_K_M.gguf",
+      "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+    },
+    "mmproj": {
+      "path": "/kaggle/working/vision_tokens/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+      "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+    },
+    "image": {
+      "path": "/kaggle/working/vision_tokens/assets/coco_val2017_000000039769.jpg",
+      "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
+    }
+  },
+  "runs": [
+    {
+      "encode_ms": 143.0,
+      "image_decode_ms": 32.0,
+      "prompt_eval_ms": 584.62,
+      "n_prompt_tokens": 75,
+      "eval_ms": 707.13,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 43.83918091440046,
+      "load_ms": 1360.21,
+      "total_ms": 1632.23,
+      "ttft_llm_ms": 584.62,
+      "ttft_vlm_ms": 727.62,
+      "encoder_fraction": 0.19653115637283197,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 3.6041589259998545,
+      "label": "run1"
+    },
+    {
+      "encode_ms": 143.0,
+      "image_decode_ms": 32.0,
+      "prompt_eval_ms": 584.3,
+      "n_prompt_tokens": 75,
+      "eval_ms": 708.16,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 43.77541798463624,
+      "load_ms": 1379.18,
+      "total_ms": 1646.98,
+      "ttft_llm_ms": 584.3,
+      "ttft_vlm_ms": 727.3,
+      "encoder_fraction": 0.19661762683899356,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 3.6293047839999417,
+      "label": "run2"
+    },
+    {
+      "encode_ms": 143.0,
+      "image_decode_ms": 33.0,
+      "prompt_eval_ms": 584.48,
+      "n_prompt_tokens": 75,
+      "eval_ms": 707.9,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 43.79149597400763,
+      "load_ms": 1341.32,
+      "total_ms": 1636.41,
+      "ttft_llm_ms": 584.48,
+      "ttft_vlm_ms": 727.48,
+      "encoder_fraction": 0.19656897784131522,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 3.5734555470003215,
+      "label": "run3"
+    },
+    {
+      "encode_ms": 142.0,
+      "image_decode_ms": 33.0,
+      "prompt_eval_ms": 583.65,
+      "n_prompt_tokens": 75,
+      "eval_ms": 708.08,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 43.780363800700485,
+      "load_ms": 1355.45,
+      "total_ms": 1636.14,
+      "ttft_llm_ms": 583.65,
+      "ttft_vlm_ms": 725.65,
+      "encoder_fraction": 0.19568662578378007,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 3.5842092500001854,
+      "label": "run4"
+    },
+    {
+      "encode_ms": 153.0,
+      "image_decode_ms": 38.0,
+      "prompt_eval_ms": 600.44,
+      "n_prompt_tokens": 75,
+      "eval_ms": 707.89,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 43.79211459407535,
+      "load_ms": 1367.85,
+      "total_ms": 1651.27,
+      "ttft_llm_ms": 600.44,
+      "ttft_vlm_ms": 753.44,
+      "encoder_fraction": 0.2030685920577617,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 3.6191877530000056,
+      "label": "run5"
+    }
+  ],
+  "aggregate": {
+    "encode_ms": {
+      "mean": 144.8,
+      "std": 4.604345773288535,
+      "n": 5,
+      "values": [
+        143.0,
+        143.0,
+        143.0,
+        142.0,
+        153.0
+      ]
+    },
+    "image_decode_ms": {
+      "mean": 33.6,
+      "std": 2.5099800796022267,
+      "n": 5,
+      "values": [
+        32.0,
+        32.0,
+        33.0,
+        33.0,
+        38.0
+      ]
+    },
+    "prompt_eval_ms": {
+      "mean": 587.498,
+      "std": 7.244323294828885,
+      "n": 5,
+      "values": [
+        584.62,
+        584.3,
+        584.48,
+        583.65,
+        600.44
+      ]
+    },
+    "eval_ms": {
+      "mean": 707.832,
+      "std": 0.40923098611908687,
+      "n": 5,
+      "values": [
+        707.13,
+        708.16,
+        707.9,
+        708.08,
+        707.89
+      ]
+    },
+    "decode_tok_per_s": {
+      "mean": 43.79571465356403,
+      "std": 0.025336125245509006,
+      "n": 5,
+      "values": [
+        43.83918091440046,
+        43.77541798463624,
+        43.79149597400763,
+        43.780363800700485,
+        43.79211459407535
+      ]
+    },
+    "load_ms": {
+      "mean": 1360.802,
+      "std": 14.106451360990855,
+      "n": 5,
+      "values": [
+        1360.21,
+        1379.18,
+        1341.32,
+        1355.45,
+        1367.85
+      ]
+    },
+    "ttft_llm_ms": {
+      "mean": 587.498,
+      "std": 7.244323294828885,
+      "n": 5,
+      "values": [
+        584.62,
+        584.3,
+        584.48,
+        583.65,
+        600.44
+      ]
+    },
+    "ttft_vlm_ms": {
+      "mean": 732.298,
+      "std": 11.84543034254141,
+      "n": 5,
+      "values": [
+        727.62,
+        727.3,
+        727.48,
+        725.65,
+        753.44
+      ]
+    },
+    "encoder_fraction": {
+      "mean": 0.1976945957789365,
+      "std": 0.003028706349130315,
+      "n": 5,
+      "values": [
+        0.19653115637283197,
+        0.19661762683899356,
+        0.19656897784131522,
+        0.19568662578378007,
+        0.2030685920577617
+      ]
+    },
+    "total_ms": {
+      "mean": 1640.606,
+      "std": 8.094098467402006,
+      "n": 5,
+      "values": [
+        1632.23,
+        1646.98,
+        1636.41,
+        1636.14,
+        1651.27
+      ]
+    },
+    "wall_s_process": {
+      "mean": 3.602063252000062,
+      "std": 0.023328671321330752,
+      "n": 5,
+      "values": [
+        3.6041589259998545,
+        3.6293047839999417,
+        3.5734555470003215,
+        3.5842092500001854,
+        3.6191877530000056
+      ]
+    }
+  },
+  "kv_buffer_mib": 2048.0,
+  "derived": {
+    "encoder_fraction_of_ttft_vlm": 0.197733709500777,
+    "amdahl_ceiling_simple_1_over_frac": 5.057306629834254,
+    "amdahl_ceiling_refined_keep0": 1.0480894463702486,
+    "note": "simple = 1/encoder_fraction (plan \u00a71); refined = keep->0 limit where only the image-embedding part of prefill (image_decode_ms) is prunable"
+  },
+  "determinism": {
+    "identical_output_across_timed_runs": true,
+    "generated_text_first_run": "The image features two cats lying on a couch, each occupying a different side of the couch. One cat is located on the left side,"
+  },
+  "raw_logs_dir": "results/raw/20260718-190224_p2_sweep_kaggle_gpu_keep0.1"
+}
