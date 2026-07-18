@@ -40,6 +40,10 @@ def main():
                     help="forwarded to bench_baseline.py -- see its --platform-tag help")
     ap.add_argument("--build-desc", default=None,
                     help="forwarded to bench_baseline.py's --build-desc if set, else its default")
+    ap.add_argument("--extra-arg", action="append", default=[],
+                    help="additional llama-mtmd-cli flag forwarded to every cell, on top of the "
+                         "--visual-keep/--visual-prune-method flags this driver already adds -- "
+                         "repeatable, e.g. --extra-arg=-ngl --extra-arg=999 for a GPU build")
     ap.add_argument("--dry-run", action="store_true", help="print what would run, do nothing")
     args = ap.parse_args()
 
@@ -59,6 +63,8 @@ def main():
             "--extra-arg=--visual-keep", f"--extra-arg={r}",
             "--extra-arg=--visual-prune-method", "--extra-arg=cls",
         ]
+        for extra in args.extra_arg:
+            cmd.append(f"--extra-arg={extra}")
         if args.build_desc is not None:
             cmd += ["--build-desc", args.build_desc]
         print(f"[sweep] {tag}: {' '.join(cmd)}", flush=True)
