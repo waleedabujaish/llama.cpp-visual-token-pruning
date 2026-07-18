@@ -1,0 +1,341 @@
+{
+  "tag": "p2_sweep_x86_keep0.5",
+  "timestamp": "20260718-084545",
+  "provenance": {
+    "model_repo": "second-state/Llava-v1.5-7B-GGUF",
+    "model_files": [
+      "llava-v1.5-7b-Q4_K_M.gguf",
+      "llava-v1.5-7b-mmproj-model-f16.gguf"
+    ],
+    "substitution_reason": "Originally planned mys/ggml_llava-v1.5-7b fails to load at the pinned llama.cpp commit: its 2023-era mmproj lacks the clip.projector_type GGUF key required by the current loader (clip.cpp:1153). second-state repack is the same LLaVA-1.5-7B weights and is used by llama.cpp's own vision test suite (tools/mtmd/tests.sh:95).",
+    "config_frozen": "Run config frozen 2026-07-17 for all cells incl. pruned runs: -n 32 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024 --perf --chat-template vicuna -v. Rationale in NOTES.md. -t 8 = P-cores only (deliberate; E-core/all-core ablation deferred). -ub 1024 keeps the 576-token non-causal image batch in one ubatch."
+  },
+  "command": [
+    "llama.cpp-prune/build/bin/llama-mtmd-cli",
+    "-m",
+    "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "--mmproj",
+    "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "--image",
+    "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/assets/coco_val2017_000000039769.jpg",
+    "-p",
+    "Describe the image in detail.",
+    "-n",
+    "32",
+    "--temp",
+    "0",
+    "--seed",
+    "42",
+    "-t",
+    "8",
+    "-tb",
+    "8",
+    "-b",
+    "2048",
+    "-ub",
+    "1024",
+    "--perf",
+    "--chat-template",
+    "vicuna",
+    "-v",
+    "--visual-keep",
+    "0.5",
+    "--visual-prune-method",
+    "cls"
+  ],
+  "prompt": "Describe the image in detail.",
+  "config": {
+    "n_predict": 32,
+    "threads": 8,
+    "batch": 2048,
+    "ubatch": 1024,
+    "temp": 0.0,
+    "seed": 42,
+    "warmup_discarded": 1,
+    "timed_runs": 5,
+    "cooldown_s_between_runs": 0.0,
+    "extra_args": [
+      "--visual-keep",
+      "0.5",
+      "--visual-prune-method",
+      "cls"
+    ]
+  },
+  "platform_tag": "github-actions-x86-shared",
+  "environment": {
+    "llama_cpp_build": {
+      "bin_path": "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/llama.cpp-prune/build/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 1 (82f2ccb)",
+      "bin_commit_short": "82f2ccb",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF (CPU-only, no BLAS backend configured)",
+    "cpu": "INTEL(R) XEON(R) PLATINUM 8573C",
+    "n_cores": "4",
+    "p_cores": "",
+    "e_cores": "",
+    "mem_bytes": "16765378560",
+    "os": "Linux 6.17.0-1020-azure (x86_64)",
+    "load_avg_1_5_15_at_start": [
+      6.783203125,
+      5.5048828125,
+      2.9228515625
+    ],
+    "load_avg_1_5_15_at_end": [
+      7.17041015625,
+      6.00341796875,
+      3.37939453125
+    ]
+  },
+  "files": {
+    "model": {
+      "path": "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/models/llava-v1.5-7b-Q4_K_M.gguf",
+      "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+    },
+    "mmproj": {
+      "path": "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+      "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+    },
+    "image": {
+      "path": "/home/runner/work/llama.cpp-visual-token-pruning/llama.cpp-visual-token-pruning/assets/coco_val2017_000000039769.jpg",
+      "sha256": "dea9e7ef97386345f7cff32f9055da4982da5471c48d575146c796ab4563b04e"
+    }
+  },
+  "runs": [
+    {
+      "encode_ms": 2103.0,
+      "image_decode_ms": 5169.0,
+      "prompt_eval_ms": 8000.81,
+      "n_prompt_tokens": 305,
+      "eval_ms": 6935.13,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 4.469995515585144,
+      "load_ms": 1424.32,
+      "total_ms": 15334.28,
+      "ttft_llm_ms": 8000.81,
+      "ttft_vlm_ms": 10103.810000000001,
+      "encoder_fraction": 0.20813930586580703,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 16.885550944999977,
+      "label": "run1"
+    },
+    {
+      "encode_ms": 2115.0,
+      "image_decode_ms": 5145.0,
+      "prompt_eval_ms": 7973.95,
+      "n_prompt_tokens": 305,
+      "eval_ms": 6936.23,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 4.469286629768622,
+      "load_ms": 1388.52,
+      "total_ms": 15310.7,
+      "ttft_llm_ms": 7973.95,
+      "ttft_vlm_ms": 10088.95,
+      "encoder_fraction": 0.20963529405934214,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 16.82546280100007,
+      "label": "run2"
+    },
+    {
+      "encode_ms": 2112.0,
+      "image_decode_ms": 5182.0,
+      "prompt_eval_ms": 8014.67,
+      "n_prompt_tokens": 305,
+      "eval_ms": 6961.89,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 4.452813819235868,
+      "load_ms": 1423.18,
+      "total_ms": 15375.91,
+      "ttft_llm_ms": 8014.67,
+      "ttft_vlm_ms": 10126.67,
+      "encoder_fraction": 0.20855819336464998,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 16.927015890999996,
+      "label": "run3"
+    },
+    {
+      "encode_ms": 2103.0,
+      "image_decode_ms": 5149.0,
+      "prompt_eval_ms": 7983.31,
+      "n_prompt_tokens": 305,
+      "eval_ms": 6972.63,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 4.445955113063507,
+      "load_ms": 1411.28,
+      "total_ms": 15358.44,
+      "ttft_llm_ms": 7983.31,
+      "ttft_vlm_ms": 10086.310000000001,
+      "encoder_fraction": 0.20850043276480693,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 16.89457831200002,
+      "label": "run4"
+    },
+    {
+      "encode_ms": 2105.0,
+      "image_decode_ms": 5147.0,
+      "prompt_eval_ms": 7970.14,
+      "n_prompt_tokens": 305,
+      "eval_ms": 6977.6,
+      "n_eval_runs": 31,
+      "decode_tok_per_s": 4.442788351295574,
+      "load_ms": 1416.39,
+      "total_ms": 15343.7,
+      "ttft_llm_ms": 7970.14,
+      "ttft_vlm_ms": 10075.14,
+      "encoder_fraction": 0.20893009923435307,
+      "kv_buffer_mib": 2048.0,
+      "wall_s_process": 16.885114331999944,
+      "label": "run5"
+    }
+  ],
+  "aggregate": {
+    "encode_ms": {
+      "mean": 2107.6,
+      "std": 5.549774770204643,
+      "n": 5,
+      "values": [
+        2103.0,
+        2115.0,
+        2112.0,
+        2103.0,
+        2105.0
+      ]
+    },
+    "image_decode_ms": {
+      "mean": 5158.4,
+      "std": 16.334013591276335,
+      "n": 5,
+      "values": [
+        5169.0,
+        5145.0,
+        5182.0,
+        5149.0,
+        5147.0
+      ]
+    },
+    "prompt_eval_ms": {
+      "mean": 7988.576,
+      "std": 18.78898826440638,
+      "n": 5,
+      "values": [
+        8000.81,
+        7973.95,
+        8014.67,
+        7983.31,
+        7970.14
+      ]
+    },
+    "eval_ms": {
+      "mean": 6956.696,
+      "std": 20.011226349227297,
+      "n": 5,
+      "values": [
+        6935.13,
+        6936.23,
+        6961.89,
+        6972.63,
+        6977.6
+      ]
+    },
+    "decode_tok_per_s": {
+      "mean": 4.456167885789743,
+      "std": 0.012824461215079016,
+      "n": 5,
+      "values": [
+        4.469995515585144,
+        4.469286629768622,
+        4.452813819235868,
+        4.445955113063507,
+        4.442788351295574
+      ]
+    },
+    "load_ms": {
+      "mean": 1412.738,
+      "std": 14.535753162461187,
+      "n": 5,
+      "values": [
+        1424.32,
+        1388.52,
+        1423.18,
+        1411.28,
+        1416.39
+      ]
+    },
+    "ttft_llm_ms": {
+      "mean": 7988.576,
+      "std": 18.78898826440638,
+      "n": 5,
+      "values": [
+        8000.81,
+        7973.95,
+        8014.67,
+        7983.31,
+        7970.14
+      ]
+    },
+    "ttft_vlm_ms": {
+      "mean": 10096.176000000001,
+      "std": 19.876042865721615,
+      "n": 5,
+      "values": [
+        10103.810000000001,
+        10088.95,
+        10126.67,
+        10086.310000000001,
+        10075.14
+      ]
+    },
+    "encoder_fraction": {
+      "mean": 0.20875266505779183,
+      "std": 0.0005674871603921515,
+      "n": 5,
+      "values": [
+        0.20813930586580703,
+        0.20963529405934214,
+        0.20855819336464998,
+        0.20850043276480693,
+        0.20893009923435307
+      ]
+    },
+    "total_ms": {
+      "mean": 15344.606,
+      "std": 24.63931776652887,
+      "n": 5,
+      "values": [
+        15334.28,
+        15310.7,
+        15375.91,
+        15358.44,
+        15343.7
+      ]
+    },
+    "wall_s_process": {
+      "mean": 16.883544456200003,
+      "std": 0.036713351779295036,
+      "n": 5,
+      "values": [
+        16.885550944999977,
+        16.82546280100007,
+        16.927015890999996,
+        16.89457831200002,
+        16.885114331999944
+      ]
+    }
+  },
+  "kv_buffer_mib": 2048.0,
+  "derived": {
+    "encoder_fraction_of_ttft_vlm": 0.20875230384256377,
+    "amdahl_ceiling_simple_1_over_frac": 4.79036629341431,
+    "amdahl_ceiling_refined_keep0": 2.044680844169521,
+    "note": "simple = 1/encoder_fraction (plan \u00a71); refined = keep->0 limit where only the image-embedding part of prefill (image_decode_ms) is prunable"
+  },
+  "determinism": {
+    "identical_output_across_timed_runs": true,
+    "generated_text_first_run": "The image features a pink couch with two cats lying on it. One cat is positioned on the left side of the couch, while the"
+  },
+  "raw_logs_dir": "results/raw/20260718-084545_p2_sweep_x86_keep0.5"
+}
