@@ -1,0 +1,21 @@
+# argv: /Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin/llama-server -m models/llava-v1.5-7b-Q4_K_M.gguf --mmproj models/llava-v1.5-7b-mmproj-model-f16.gguf -t 8 -tb 8 -b 2048 -ub 1024 --jinja --chat-template {%- for message in messages -%}{%- if message['role'] == 'system' -%}{{ message['content'] }}{%- elif message['role'] == 'user' -%} USER: {{ message['content'] }}{%- elif message['role'] == 'assistant' -%} ASSISTANT: {{ message['content'] }}</s>{%- endif -%}{%- endfor -%}{%- if add_generation_prompt -%} ASSISTANT:{%- endif -%} --visual-keep 1.0 --visual-prune-method cls --host 127.0.0.1 --port 8811
+0.00.003.480 I cmn  common_param: common_params_print_info: verbosity = 3 (adjust with the `-lv N` CLI arg)
+0.00.004.905 W srv  llama_server: -----------------
+0.00.004.906 W srv  llama_server: CORS is set to allow all origins ('*') and no API key is set
+0.00.004.906 W srv  llama_server: this can be a security risk (cross-origin attacks)
+0.00.004.906 W srv  llama_server: more info: https://github.com/ggml-org/llama.cpp/pull/25655
+0.00.004.906 W srv  llama_server: -----------------
+0.00.006.812 I srv    load_model: loading model 'models/llava-v1.5-7b-Q4_K_M.gguf'
+0.05.877.060 W load_tensors: ffn up/down are swapped
+0.06.328.110 I srv    load_model: loaded multimodal model, 'models/llava-v1.5-7b-mmproj-model-f16.gguf'
+0.07.350.101 I srv    load_model: initializing, n_slots = 4, n_ctx_slot = 4096, kv_unified = 'true'
+0.07.355.440 I srv  llama_server: model loaded
+0.07.355.445 I srv  llama_server: listening on http://127.0.0.1:8811
+0.08.085.535 I slot get_availabl: id  3 | task -1 | selected slot by LRU, t_last = -1
+0.08.085.730 I slot launch_slot_: id  3 | task 0 | processing task, is_child = 0
+0.14.139.456 I slot print_timing: id  3 | task 0 | prompt eval time =    6004.84 ms /   662 tokens (    9.07 ms per token,   110.24 tokens per second)
+0.14.139.460 I slot print_timing: id  3 | task 0 |        eval time =      48.85 ms /     3 tokens (   16.28 ms per token,    61.41 tokens per second)
+0.14.139.460 I slot print_timing: id  3 | task 0 |       total time =    6053.69 ms /   665 tokens
+0.14.139.460 I slot print_timing: id  3 | task 0 |    graphs reused =          2
+0.14.139.562 I slot      release: id  3 | task 0 | stop processing: n_tokens = 664, truncated = 0
+0.14.142.470 I srv    operator(): operator(): cleaning up before exit...

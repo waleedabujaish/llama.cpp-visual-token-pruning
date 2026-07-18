@@ -1,0 +1,32 @@
+{
+  "tag": "p3_textvqa_m4_cpu_keep0.1",
+  "tag_prefix": "p3_textvqa_m4_cpu",
+  "timestamp": "20260719-001928",
+  "visual_keep": 0.1,
+  "visual_prune_method": "cls",
+  "platform_tag": "apple-m4-pro-dedicated",
+  "mode": "server",
+  "llama_cpp": {
+    "build_provenance": {
+      "bin_path": "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 10059 (82f2ccb5c)",
+      "bin_commit_short": "82f2ccb5c",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF (CPU + Accelerate/BLAS)",
+    "model": "models/llava-v1.5-7b-Q4_K_M.gguf",
+    "mmproj": "models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "config": "-n 16 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024, custom vicuna_v1 jinja (prompt parity with the Phase 1 HF baseline), extra_args=[]"
+  },
+  "dataset": "same pinned 200-sample lmms-lab/textvqa slice as textvqa_llamacpp.py (assets/phase1/textvqa200_manifest.jsonl)",
+  "metric": "soft VQA accuracy, identical scoring code (textvqa_sim.vqa_accuracy)",
+  "n_scored": 200,
+  "n_failed": 0,
+  "acc_mean": 0.5145000000000001,
+  "acc_std": 0.48470583862792493,
+  "preds_file": "results/raw/p3_textvqa_m4_cpu_keep0.1.preds.jsonl"
+}
