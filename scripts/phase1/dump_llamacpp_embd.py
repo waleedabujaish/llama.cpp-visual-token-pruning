@@ -191,6 +191,14 @@ def main():
                     help="only meaningful with --pruned-abi")
     ap.add_argument("--visual-prune-method", default="none",
                     help="only meaningful with --pruned-abi (default: none)")
+    ap.add_argument("--n-gpu-layers", type=int, default=-1,
+                    help="llama_model_params.n_gpu_layers; -1 is this script's prior implicit "
+                         "behavior (never touched the field) and is verified (empirically, against "
+                         "the actual compiled struct default) to mean 'offload every layer the "
+                         "backend supports' -- i.e. this default is a no-op on a CPU-only build and "
+                         "full GPU offload on a CUDA build. Explicit here rather than left as an "
+                         "unstated default, since that default's meaning is not obvious from the "
+                         "flag name alone.")
     args = ap.parse_args()
 
     ctx_params_type = mtmd_context_params_pruned if args.pruned_abi else mtmd_context_params
@@ -222,6 +230,7 @@ def main():
     lp = llama.llama_model_default_params()
     assert lp.use_mmap is True and lp.use_mlock is False and lp.check_tensors is False, \
         "llama_model_params layout mismatch (bool block)"
+    lp.n_gpu_layers = args.n_gpu_layers
     print(f"[dump] llama_model_params layout OK (n_gpu_layers={lp.n_gpu_layers})")
 
     # text model: only needed by mtmd_init for n_embd + vocab (markers);
@@ -291,6 +300,7 @@ def main():
         "pruned_abi": args.pruned_abi,
         "visual_keep": args.visual_keep if args.pruned_abi else None,
         "visual_prune_method": args.visual_prune_method if args.pruned_abi else None,
+        "n_gpu_layers": args.n_gpu_layers,
     }
     print("[dump] stats:", json.dumps(stats))
     (out.with_suffix(".stats.json")).write_text(json.dumps(stats, indent=2))

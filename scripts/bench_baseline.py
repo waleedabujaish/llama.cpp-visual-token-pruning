@@ -65,9 +65,11 @@ RE_LOAD = re.compile(r"load time\s*=\s*([\d.]+) ms")
 RE_PROMPT_EVAL = re.compile(r"prompt eval time\s*=\s*([\d.]+) ms\s*/\s*(\d+) tokens")
 RE_EVAL = re.compile(r"[^t] eval time\s*=\s*([\d.]+) ms\s*/\s*(\d+) runs")
 RE_TOTAL = re.compile(r"total time\s*=\s*([\d.]+) ms\s*/\s*(\d+) tokens")
-# llama_kv_cache logs one "CPU KV buffer size" line per context init (usually 2: a
-# throwaway warmup context + the real one) -- take the last, it's the real context's.
-RE_KV_BUFFER = re.compile(r"llama_kv_cache:\s+CPU KV buffer size\s*=\s*([\d.]+) MiB")
+# llama_kv_cache logs one "<backend> KV buffer size" line per context init (usually
+# 2: a throwaway warmup context + the real one) -- take the last, it's the real
+# context's. Backend name varies (CPU, CUDA0, ...); matched generically since this
+# script now runs on GPU builds too, not just CPU.
+RE_KV_BUFFER = re.compile(r"llama_kv_cache:\s+\S+ KV buffer size\s*=\s*([\d.]+) MiB")
 # /usr/bin/time -l (macOS) output, appended to stderr after the wrapped process exits.
 RE_MAXRSS = re.compile(r"(\d+)\s+maximum resident set size")
 RE_FOOTPRINT = re.compile(r"(\d+)\s+peak memory footprint")
@@ -128,6 +130,38 @@ def cpu_env_info() -> dict:
         "cpu": cpu_model, "n_cores": n_cores,
         "p_cores": "", "e_cores": "",  # no P/E-core distinction on this platform
         "mem_bytes": mem_bytes,
+    }
+
+
+def gpu_env_info() -> dict:
+    """NVIDIA GPU info via nvidia-smi, when present. Returns {} (not a
+    guessed/empty-string field set) on every platform without an NVIDIA GPU --
+    every platform tagged so far (M4 Pro, GitHub Actions x86) has no GPU, so
+    this is purely additive and does not change their JSON shape."""
+    try:
+        out = subprocess.run(
+            ["nvidia-smi", "--query-gpu=name,memory.total,driver_version,compute_cap",
+             "--format=csv,noheader"],
+            capture_output=True, text=True, timeout=10,
+        )
+        if out.returncode != 0 or not out.stdout.strip():
+            return {}
+        name, mem_total, driver, compute_cap = [s.strip() for s in out.stdout.strip().split("\n")[0].split(",")]
+    except Exception:
+        return {}
+    cuda_toolkit_version = ""
+    try:
+        nvcc_out = subprocess.run(["nvcc", "--version"], capture_output=True, text=True, timeout=10)
+        m = re.search(r"release (\d+\.\d+)", nvcc_out.stdout)
+        cuda_toolkit_version = m.group(1) if m else ""
+    except Exception:
+        pass
+    return {
+        "gpu_name": name,
+        "gpu_mem_total": mem_total,
+        "gpu_driver_version": driver,
+        "gpu_compute_capability": compute_cap,
+        "cuda_toolkit_version": cuda_toolkit_version,
     }
 
 
@@ -322,6 +356,7 @@ def main():
             "llama_cpp_build": resolve_build_provenance(args.bin, args.llama_repo),
             "build": args.build_desc,
             **cpu_env_info(),
+            **gpu_env_info(),
             "os": f"{platform.system()} {platform.release()} ({platform.machine()})",
             "load_avg_1_5_15_at_start": list(load_avg_start),
             "load_avg_1_5_15_at_end": list(os.getloadavg()),
