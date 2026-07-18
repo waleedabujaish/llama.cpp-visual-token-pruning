@@ -55,10 +55,13 @@ first person to actually run this. Watch the output on the first pass.
 Kaggle's **Output** panel (or **Save & Run All** to keep a Version) will
 have everything under `vision_tokens/results/`. Section 18 (the last code
 cell) prints the exact file list. Pull those `.json` files (and the
-`raw/` subfolder) into this repo's own `results/` directory — they're
-already the same schema the CPU/x86 runs use, tagged
-`platform_tag="kaggle-gpu-<gpu-name>"`, so `sweep_analysis.py` and the
-rest of the existing tooling pick them up without any changes.
+`raw/` subfolder) into this repo's own `results/` directory. The latency
+sweep's output is already the same schema `sweep_analysis.py` produces
+for CPU/x86 (tagged `platform_tag="kaggle-gpu-<gpu-name>"`), so it slots
+into the existing tooling with no changes. The accuracy sweep's per-ratio
+summaries are a new schema — see the notebook's closing "Done" cell for
+exactly what fields each one has; there was no prior CPU/x86 keep-ratio
+accuracy output to match against.
 
 ## Session time — genuinely unknown, here's why
 
@@ -129,8 +132,17 @@ chosen differently:
   `tools/server/` vs `tools/mtmd/mtmd-cli.cpp`), so I did not assume they
   produce identical text — the notebook empirically checks this on one
   sample before trusting server mode for the bulk run, and falls back
-  loudly if they disagree. I could not verify which branch this takes
-  without a GPU; read what section 15 prints.
+  loudly if they disagree. One refinement worth knowing about: a text
+  mismatch on that one probe sample doesn't by itself prove the server's
+  template rendering is wrong — greedy (temp=0) decoding is only
+  bit-reproducible if the GPU's kernels are, which section 10 (Gate 0.5)
+  may find is not the case here. So on a mismatch, the CLI path is
+  re-run once more on the same sample first: if it doesn't even
+  reproduce its own prior answer, that mismatch is noise, not a harness
+  bug, and server mode is used anyway. Only a mismatch against a CLI
+  answer that DID reproduce itself triggers the real fallback. I could
+  not verify which branch this takes without a GPU; read what section 15
+  prints.
 - **Did not expand TextVQA past the pinned 200 samples.** The manifest
   (`assets/phase1/textvqa200_manifest.jsonl`) is a specific, pinned,
   already-reproducible slice. Drawing more samples from the dataset would
@@ -164,6 +176,15 @@ Tested for real, without a GPU:
 - The `"offloaded N/M layers to GPU"` log line section 9 greps for —
   confirmed present in `src/llama-model.cpp` at the exact pinned base
   commit (`e8f19cc0`), not just current upstream.
+- GPU presence detection (section 2, and `bench_baseline.py`'s
+  `gpu_env_info()`) queries `nvidia-smi`'s `name` field alone for the
+  pass/fail gate, with the richer fields (`memory.total`,
+  `driver_version`, `compute_cap`) fetched separately and best-effort.
+  This was a real fix, not preemptive caution: the first version queried
+  all four fields in one combined call, which means an older
+  nvidia-smi/driver not recognizing `compute_cap` (a newer field) would
+  have failed the *whole* query and misreported "no GPU" on a perfectly
+  working setup.
 
 **Not tested, because it needs a real GPU:**
 - The actual CUDA build (`-DGGML_CUDA=ON`) compiling cleanly on Kaggle's
