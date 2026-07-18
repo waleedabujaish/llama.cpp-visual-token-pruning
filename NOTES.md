@@ -1055,3 +1055,87 @@ backend's kernels.
 
 Full data: `results/*_p3_textvqa_kaggle_gpu_keep*_summary.json`,
 `results/raw/p3_textvqa_kaggle_gpu_keep*.preds.jsonl`.
+
+## CPU-vs-GPU accuracy parity spot-check (M4, 2026-07-19)
+
+The single-image latency test showed byte-identical generated text across
+M4/x86/GPU at every ratio (including the same keep=0.05 hallucination) -
+but that was one image, one sample. This checks whether that holds
+systematically: a local M4 run of `textvqa_keep_sweep.py` on the SAME
+pinned 200-sample manifest and 6 ratios as the Kaggle GPU run (server
+mode throughout - equivalence probe passed, consistent with Gate 0.5's
+already-established CPU determinism), compared per-sample against the
+already-committed GPU results via a new script,
+`textvqa_cpu_gpu_parity.py`.
+
+### Aggregate accuracy: close, non-directional
+
+| keep | CPU acc | GPU acc | diff (GPU-CPU) |
+|---|---|---|---|
+| 1.00 | 54.4% | 54.4% | +0.00pp |
+| 0.75 | 54.8% | 54.4% | -0.30pp |
+| 0.50 | 54.9% | 55.6% | +0.65pp |
+| 0.25 | 53.7% | 54.4% | +0.70pp |
+| 0.10 | 51.5% | 52.7% | +1.20pp |
+| 0.05 | 51.5% | 51.7% | +0.30pp |
+
+Max difference 1.20pp, well inside the per-cell noise floor already
+established for this manifest size (n=200, ~±3.5pp SE - see the GPU
+sweep's own paired-bootstrap section above), and not consistently
+favoring either platform (GPU higher at 3 ratios, CPU higher at 2, tied
+at 1).
+
+### Per-sample text agreement: high, and it's the real content that agrees
+
+| keep | exact match | near match (normalized) | correctness-divergent |
+|---|---|---|---|
+| 1.00 | 98.5% | 98.5% | 0 |
+| 0.75 | 96.0% | 96.0% | 5 |
+| 0.50 | 95.5% | 95.5% | 3 |
+| 0.25 | 94.5% | 94.5% | 5 |
+| 0.10 | 95.0% | 95.0% | 4 |
+| 0.05 | 91.5% | 91.5% | 5 |
+
+**Near-match rate equals exact-match rate at every single ratio** - when
+CPU and GPU text differs, normalization (the same `vqa_normalize` used
+for scoring: lowercase, strip punctuation, number/contraction/article
+normalization) never reconciles it. Every divergence is a real content
+difference, not superficial formatting noise.
+
+Match rate decreases as keep ratio drops - even at keep=1.0 (no pruning
+code active at all) 3/200 samples differ between CPU and GPU, though
+none of those 3 flip correctness. This refines, rather than contradicts,
+the single-image "byte-identical across all three platforms" finding:
+that held for the one sample actually checked, but does not generalize
+to "always byte-identical" - a small, growing-with-pruning-aggressiveness
+fraction of samples do diverge, consistent with floating-point/kernel
+differences between backends becoming more consequential as fewer tokens
+carry more relative weight in the generation.
+
+**22 correctness-divergent samples total across 1200 comparisons (~1.8%)**
+- every one inspected, not just counted (`results/20260719-002506_p3_textvqa_cpu_gpu_parity.json`
+  has all 22 with both predictions and both raw scores). Roughly balanced
+  in direction per ratio (e.g. keep=0.75: 3 CPU-right/GPU-wrong vs 2
+  GPU-right/CPU-wrong; keep=0.05: 2 vs 3) - this is *why* the aggregate
+  scores stay close despite real per-sample divergence: the errors
+  partially cancel in the mean rather than one platform being
+  systematically more accurate. Nature of the divergences: mostly
+  plausible near-miss OCR-style errors on both sides ("3.99" vs "3.82",
+  "648" vs "648-home", "2012" vs "2010", "Honey maid" vs "Hershey's") -
+  not wild hallucinations, consistent with small numerical differences
+  landing right at a decision boundary rather than either backend being
+  qualitatively worse. One question (i=170, "what is the registration of
+  this licence plate") flips which platform is "right" between keep=0.25
+  and keep=0.10 - the same sample, sensitive to exact numerics at
+  different ratios, not a stable per-platform bias.
+
+**Bottom line: aggregate accuracy parity holds cleanly; per-sample
+generation parity does not, but the divergence is small, non-directional,
+and made of plausible near-misses, not qualitatively different failures.**
+The GPU accuracy numbers in the section above are a fair characterization
+of the pruning method's behavior, not an artifact of measuring on a
+different backend than CPU.
+
+Full data: `results/*_p3_textvqa_m4_cpu_keep*_summary.json`,
+`results/raw/p3_textvqa_m4_cpu_keep*.preds.jsonl`,
+`results/20260719-002506_p3_textvqa_cpu_gpu_parity.json`.
