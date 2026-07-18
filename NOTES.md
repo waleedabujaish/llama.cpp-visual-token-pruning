@@ -778,3 +778,123 @@ because further gains are unproven (real or measurement artifact, either
 way nothing usable is demonstrated below there) and because outputs are
 already unreliable at keep=0.05 itself, before the ambiguous region even
 starts.
+
+## x86 CPU platform sweep (GitHub Actions, 2026-07-18)
+
+Cross-platform replication of the original 6-cell keep-ratio sweep (keep
+in {1.0, 0.75, 0.5, 0.25, 0.1, 0.05} - the sub-0.05 H2-chasing ratios were
+deliberately excluded, per the earlier ruling that they're not worth
+re-litigating), run via `.github/workflows/x86-cpu-sweep.yml` (manual
+`workflow_dispatch`, workflow committed at `5823004`) on a GitHub Actions
+Linux runner. Results committed back to the repo by the workflow itself
+at `f211e51`.
+
+### Platform and build
+
+- Runner platform tag: `github-actions-x86-shared`. Intel(R) Xeon(R)
+  Platinum 8573C, 4 vCPU, ~15.6 GiB RAM, Linux 6.17.0-1020-azure
+  (`cpu_env_info()` added to `bench_baseline.py` for this run, reading
+  `/proc/cpuinfo`/`nproc`/`/proc/meminfo` - the M4 runs used `sysctl`,
+  which is macOS-only).
+- Build: `cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=OFF`, CPU-only,
+  **no BLAS backend configured**. This is a real, deliberate config
+  difference from the M4 build (which links Apple Accelerate), not just
+  a CPU-architecture difference - keep it in mind when reading the
+  absolute-number comparisons below.
+- Provenance: `waleedabujaish/llama.cpp` checked out at branches
+  `visual-token-pruning` and `local-test-both`. Workflow's "Verify pinned
+  commits" step asserts `git rev-parse HEAD` equals the recorded SHA for
+  both checkouts before building anything
+  (`5b90586353cadd295e46c23118c1329cfdc86d3c` /
+  `82f2ccb5cc4c12f610726c71a6f941c64e11daac`) - both matched. Binary
+  `--version` cross-checked against `--help | grep visual-keep`
+  presence/absence on both builds (pristine vs prune), per the two-signal
+  discipline established after the Task 0 build-contamination incident
+  above.
+- **`local-test-both` had never been pushed to `origin`** (this file
+  already says so, "Fix verification session" above: "local-only octopus
+  merge, never pushed"). The first workflow run failed after 38s at the
+  checkout step for exactly this reason - the branch didn't exist on the
+  remote for `actions/checkout` to resolve. Fixed by pushing the
+  existing, already-validated local branch to `origin` - no code change,
+  no new commit; same SHA that Gate 1/Gate 2 on M4 already validated.
+
+### Gate 1 (keep=1.0 bit-identity): PASS
+
+Run as an inline workflow step (pristine vs prune@keep=1.0,
+`np.array_equal` on the projector output for `assets/phase1/cat_336.png`)
+that `exit 1`s on any mismatch - a green "Run keep-ratio sweep" step is
+itself proof this passed. Not persisted as a separate results JSON the
+way the M4 Gate 1 was
+(`results/20260718-024601_gate1_timing_build_both_pristine.json`); only
+the workflow run log records it structurally on this platform.
+
+### Sweep results (n=5 + warmup per cell, `--cooldown-s 0`)
+
+| keep | K | encode_ms (mean±std) | ttft_llm_ms (mean±std) | speedup_ttft_llm | frac_ceiling_h1 | decode_tok/s |
+|---|---|---|---|---|---|---|
+| 1.00 | 576 | 2182.6 ± 2.1 | 13243.2 ± 63.4 | 1.00x | - | 4.31 |
+| 0.75 | 432 | 2138.6 ± 5.9 | 10741.0 ± 89.0 | 1.23x | 77.8% | 4.38 |
+| 0.50 | 288 | 2107.6 ± 5.5 | 7988.6 ± 18.8 | 1.66x | 81.7% | 4.46 |
+| 0.25 | 144 | 2079.0 ± 5.0 | 5575.8 ± 16.7 | 2.38x | 79.5% | 4.64 |
+| 0.10 | 58 | 2067.4 ± 13.4 | 3865.0 ± 23.2 | 3.43x | 81.1% | 4.71 |
+| 0.05 | 29 | 2067.6 ± 20.6 | 3310.4 ± 28.6 | 4.00x | 81.3% | 4.70 |
+
+`identical_output: true` (bit-identical generated text across the 5 timed
+runs) on every cell. Full data:
+`results/20260718-08{4124,4343,4545,4729,4858,5015}_p2_sweep_x86_keep*.json`,
+`results/p2_sweep_x86_analysis.json`.
+
+**Prune-overhead fit** (same methodology as the M4 sweep, `encode_ms = A
++ B*K` over the pruned cells): A=2057.59ms, B=0.1811ms/token, R²=0.9849,
+max|residual|=4.76ms - a tight fit, same shape as M4's original-range fit.
+Fitted encode_ms at K=576: 2161.91ms; measured keep=1.0: 2182.6ms; point
+estimate of scoring+selection overhead: **-20.69ms**. Same sign as M4's
+original-range estimate (-38.96ms) and, like that one, not distinguishable
+from noise at this precision - the keep=1.0 cell's std (2.1ms) is small
+here, but the estimate itself is still a small fraction of encode_ms
+(~2070-2185ms) either way. Only one range is reported (no sub-0.05 cells
+were run on this platform, so there's no "extended fit" to compare
+against, unlike the M4 H2-extension section above).
+
+**Decode speed**: 4.31 -> 4.70 tok/s (+9.0%) from keep=1.0 to keep=0.05,
+monotonic except the last step (keep=0.05's 4.7042 sits fractionally
+below keep=0.1's 4.7103 - within noise). Same direction as the M4 finding
+(+21.4% there), smaller magnitude here. Plausible contributors to the
+size difference - the 4-core x86 box vs M4's 8P+4E cores changing the
+relative per-decode-step attention cost share, or the shared runner's
+contention adding noise to the decode-speed measurement itself - are not
+distinguished; reported as direction-consistent, not as a comparable
+ratio.
+
+**Fraction of theoretical ceiling (H1)**: 77.8-81.7% here across keep
+0.75-0.05, vs 87.8-93.4% on M4 at the same ratios. A real, meaningfully
+sized gap - but this run sat on a shared GitHub Actions runner with a
+rising load average (`load_avg_1_5_15`: 5.53 -> 7.20 over the course of
+the sweep, recorded in every result JSON's `environment` block), while
+the M4 runs were on a dedicated, otherwise-idle machine. Contention on a
+shared runner could suppress the achieved fraction of ceiling below what
+a dedicated x86 box would show, independent of anything about the x86
+architecture itself. Not resolved which explains the gap; reported, not
+asserted as an architecture effect.
+
+**Memory**: `max_rss_mib`/`peak_footprint_mib` are `null` on every x86
+cell - `/usr/bin/time -l` is macOS-only and `bench_baseline.py`'s
+`use_mem_wrapper` auto-skips it on Linux by design. The M4 finding ("KV
+buffer size is constant across keep ratios, peak memory does not scale
+with kept tokens") is not independently checked on this platform.
+
+### What this run establishes
+
+Every headline finding from the M4 sweep replicates in *direction* on a
+second, architecturally different CPU (x86 Xeon vs ARM M4 Pro, no BLAS
+backend vs Apple Accelerate): TTFT_llm speedup grows monotonically with
+pruning, decode speed improves with pruning, output determinism holds,
+Gate 1 bit-identity holds. Absolute numbers are not directly comparable
+to M4's - different core count, different BLAS configuration, a shared/
+contended runner instead of a dedicated machine - so this is a
+qualitative generalization check (the effect isn't an M4-only artifact),
+not a second controlled quantitative data point for the same claim. A
+controlled x86 comparison (dedicated hardware, matched BLAS backend)
+remains a possible future addition if a precise cross-platform number is
+ever needed.
