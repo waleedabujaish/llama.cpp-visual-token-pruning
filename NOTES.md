@@ -1139,3 +1139,148 @@ different backend than CPU.
 Full data: `results/*_p3_textvqa_m4_cpu_keep*_summary.json`,
 `results/raw/p3_textvqa_m4_cpu_keep*.preds.jsonl`,
 `results/20260719-002506_p3_textvqa_cpu_gpu_parity.json`.
+
+## H2 sub-0.05 GPU extension (Kaggle P100, 2026-07-19)
+
+Same driver, same frozen config, `--cooldown-s 5`, keep in {0.03, 0.02,
+0.015, 0.01} (K=17/12/9/6), run via `kaggle_gpu_sweep.ipynb` §13a,
+reusing the main sweep's tag-prefix so `sweep_analysis.py` combined it
+with the original 6 cells into one 10-point curve automatically.
+
+**Resumability worked via git, not session state, and Gate 0.5/Gate 1
+re-verified cleanly.** This was a *fresh* Kaggle session (empty
+`/kaggle/working`), yet the original 6 latency + 6 accuracy cells were
+correctly skipped rather than re-run - because the results from the
+first session were already committed to the repo, and `sweep_prune.py`'s
+resumability check found them in the freshly-cloned checkout itself, not
+a leftover working directory. Verified byte-identical to what was
+already committed before trusting the skip. Gate 0.5/Gate 1 have no such
+skip logic (by design - they're meant to re-verify every run) and did
+re-execute, producing `.npy` embeddings **bitwise identical** to the
+first session's - a real cross-session determinism confirmation that
+fell out of the resumability design rather than being a dedicated check.
+
+**Pre-registered prediction (stated before running): a cleaner
+break-even than CPU's noise-dominated pattern.** This did not hold in
+its clean form.
+
+| keep | K | ttft_vlm_ms (mean±std) | range |
+|---|---|---|---|
+| 0.050 | 29 | 720.6 ± 10 | (714-738) |
+| 0.030 | 17 | 719.6 ± 13 | (710-743) |
+| 0.020 | 12 | 728.6 ± 12 | (723-750) |
+| 0.015 | 9 | 727.8 ± 12 | (720-747) |
+| 0.010 | 6 | 572.5 ± 18 | (563-604) |
+
+What actually happened: TTFT_vlm's mean stays close to flat from
+keep=0.1 (732.3ms) through keep=0.015 (727.8ms) - only shallow drift
+despite `n_prompt_tokens` dropping from 58 to 26 over that range - then
+**drops sharply at keep=0.01** to 572.5ms, lower than every other cell
+including keep=0.05's 720.6ms. Traced to which component: `encode_ms`
+stays flat throughout this whole range (144-154ms, consistent with the
+established finding that encoder cost doesn't depend on keep ratio) -
+the drop is entirely in `ttft_llm_ms` (prefill), which itself stays
+essentially flat at ~573-576ms from keep=0.05 down through keep=0.015
+despite total prompt tokens falling from 46 to 26, then drops to 427.1ms
+at keep=0.01 (23 tokens). Looks like a possible discrete effect at very
+small batch/token counts (e.g. a kernel-selection or batching threshold
+in the CUDA backend) rather than a smooth function of token count -
+plausible, not confirmed; not investigated further here.
+
+**Extended-range fit is worse than CPU's, not better - the opposite of
+what was predicted.** A=147.75ms, B=-0.0030ms/token, R²=**0.013**,
+max|residual|=6.67ms. CPU's own extended-range fit (`NOTES.md`
+"Sweep extension for H2") was R²=0.15 - degraded, but this GPU extension
+degraded further. The reasoning behind the prediction (a real, tight,
+resolvable overhead signal at K=29-432 should extrapolate cleanly) did
+not hold once K dropped below 29; whatever's happening at very small K
+is not simply "the same fixed cost as a larger fraction of a smaller
+total."
+
+**Not the same failure mode as CPU's noise-dominance, either.** CPU's
+H2 extension showed run-to-run std ballooning from ±1-6ms to ±65-117ms
+below keep=0.05 - a clear signature of OS-scheduling noise becoming
+dominant. Here, std stays tight throughout (9-20ms) at every ratio,
+including keep=0.01 - the *mean* moves in a way that isn't smooth, but
+the individual measurements within each cell remain precise. This is a
+third, distinct pattern from both the pre-registered break-even and
+CPU's noise-dominance story - reported as its own honest finding, not
+forced into either bucket. **H2's actual mechanism claim remains
+unresolved on GPU too**, for a different reason than on CPU: not because
+measurement noise swamps the signal, but because the signal itself
+doesn't behave smoothly at the smallest token counts tested.
+
+**Practical conclusion is unchanged regardless:** no ratio below
+keep~0.05 is worth using - keep=0.05 already shows real output
+degradation (both the qualitative single-image finding and the
+statistical accuracy/POPE trends below), so whatever is happening in
+this ambiguous sub-0.05 region on either platform doesn't change the
+operating recommendation.
+
+Full data: `results/20260719-*_p2_sweep_kaggle_gpu_keep{0.03,0.02,0.015,0.01}.json`,
+`results/p2_sweep_kaggle_gpu_analysis.json` (now a 10-cell combined analysis).
+
+## POPE object-hallucination sweep (Kaggle P100, 2026-07-19)
+
+The grounding/hallucination task from the plan, finally run: 300
+questions (100 each of POPE's `random`/`popular`/`adversarial`
+categories - confirmed those are the real category strings), all 6
+keep ratios, via `pope_keep_sweep.py` (server mode throughout, zero
+failures across all 1800 scored predictions).
+
+One caveat carried over from pin generation: the 300 questions cover
+only **17 unique underlying images**, not the ~100 originally assumed -
+"first N per category in streaming order" landed on a front-loaded
+cluster rather than spreading out (see the pin-generation commit).
+Functionally valid, deterministic, reproducible - just less visually
+diverse than intended.
+
+### Overall: accuracy degrades, and the mechanism is interpretable
+
+| keep | accuracy | precision | recall | F1 | yes-ratio |
+|---|---|---|---|---|---|
+| 1.00 | 85.0% | 90.1% | 78.7% | 84.0% | 43.7% |
+| 0.75 | 86.7% | 90.4% | 82.0% | 86.0% | 45.3% |
+| 0.50 | 86.0% | 89.1% | 82.0% | 85.4% | 46.0% |
+| 0.25 | 85.3% | 91.4% | 78.0% | 84.2% | 42.7% |
+| 0.10 | 82.3% | 95.3% | 68.0% | 79.4% | 35.7% |
+| 0.05 | 79.7% | 95.9% | 62.0% | 75.3% | 32.3% |
+
+Accuracy is not strictly monotonic at the top (keep=0.75's 86.7% and
+keep=0.5's 86.0% both exceed keep=1.0's 85.0% - the same "unpruned isn't
+automatically the ceiling" pattern already seen on the TextVQA sweep,
+plausibly n=300 sampling noise rather than a real "light pruning helps"
+effect) but is cleanly monotonically decreasing from keep=0.75 downward:
+86.7% -> 86.0% -> 85.3% -> 82.3% -> 79.7%.
+
+**The degradation has a clear, interpretable direction, not just
+generic noise.** As keep decreases: **precision rises** (90.1% ->
+95.9%) while **recall falls sharply** (78.7% -> 62.0%), and yes-ratio
+drops in lockstep (43.7% -> 32.3%). The model becomes systematically
+*more conservative* under aggressive pruning - it says "yes" less often,
+which suppresses false-positive hallucinations (the exact failure mode
+POPE is designed to probe) at the direct cost of missing real objects
+that are actually present (recall). This is a real, mechanistic finding
+about *how* pruning degrades this model on this task, not just a report
+that accuracy goes down.
+
+### Per-category: adversarial is hardest at every single ratio
+
+| keep | adversarial | popular | random |
+|---|---|---|---|
+| 1.00 | 81.0% | 87.0% | 87.0% |
+| 0.75 | 82.0% | 88.0% | 90.0% |
+| 0.50 | 82.0% | 87.0% | 89.0% |
+| 0.25 | 82.0% | 87.0% | 87.0% |
+| 0.10 | 80.0% | 84.0% | 83.0% |
+| 0.05 | 77.0% | 81.0% | 81.0% |
+
+Adversarial (probes whether the model hallucinates objects that are
+statistically likely given the rest of the scene, not just any random
+absent object) is the lowest-accuracy category at every one of the 6
+ratios tested - confirms POPE's own premise that this category is
+genuinely harder, and that this holds up under pruning too, not just in
+the unpruned baseline.
+
+Full data: `results/*_p4_pope_kaggle_gpu_keep*_summary.json`,
+`results/raw/p4_pope_kaggle_gpu_keep*.preds.jsonl`.
