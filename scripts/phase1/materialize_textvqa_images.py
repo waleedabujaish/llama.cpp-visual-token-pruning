@@ -16,10 +16,24 @@ in notebook settings).
 
 Resumable: already-materialized indices (present in both NNN.png and
 meta.jsonl) are skipped on a re-run.
+
+Known issue, worked around at the bottom of this file: the HF `datasets`
+streaming client leaves a background thread that can race normal Python
+interpreter shutdown after main() returns (observed on Kaggle's Linux
+image as "Fatal Python error: PyGILState_Release: thread state ... must
+be current when releasing", SIGABRT/exit -6 -- on macOS the same
+underlying race instead manifested as the process simply never exiting).
+Both are a nondeterministic teardown-ordering bug in the streaming
+client, not a correctness issue -- by the time it can happen, every file
+this script writes has already been flushed to disk. Sidestepped by
+calling os._exit() immediately after a successful run, which terminates
+the process before Python's normal interpreter-finalization sequence
+(the exact code path where the race occurs) ever runs.
 """
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -85,3 +99,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # see the module docstring -- skips the interpreter-finalization sequence where
+    # the HF datasets streaming client's background thread can race teardown; every
+    # file is already flushed to disk by the time main() returns successfully
+    os._exit(0)

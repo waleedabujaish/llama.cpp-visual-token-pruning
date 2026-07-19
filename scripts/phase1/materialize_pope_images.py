@@ -5,19 +5,33 @@ assets/phase1/pope300_manifest.jsonl (or whatever --n-per-category the pin
 was built with, see pope_pin_manifest.py) pins question-level metadata by
 (id, question_id); this script streams lmms-lab/POPE again and saves each
 referenced image once (keyed by image_source -- multiple pinned questions
-share the same underlying image, ~3x fewer images than questions since
-POPE asks ~3 questions per image per category on average within a
-category-limited subset), cross-checking the pinned question text at each
-(id, question_id) match against the pin -- same drift-detection principle
-as materialize_textvqa_images.py: a dataset-order/version drift gets
-caught here rather than silently producing a mismatched image+question.
+share the same underlying image; the actual pinned 300-question manifest
+landed on only 17 unique images, not the ~100 originally assumed here --
+"first N per category in streaming order" apparently concentrated on a
+small, front-loaded cluster of images rather than spreading out; see
+NOTES.md/the pin-generation commit for the full caveat), cross-checking
+the pinned question text at each (id, question_id) match against the pin
+-- same drift-detection principle as materialize_textvqa_images.py: a
+dataset-order/version drift gets caught here rather than silently
+producing a mismatched image+question.
 
 Needs the `datasets` package and network access (Kaggle: enable Internet
 in notebook settings).
+
+Known issue, worked around at the bottom of this file: the HF `datasets`
+streaming client leaves a background thread that can race normal Python
+interpreter shutdown after main() returns (observed on Kaggle's Linux
+image as "Fatal Python error: PyGILState_Release: thread state ... must
+be current when releasing", SIGABRT/exit -6, always AFTER every file this
+script writes has already been flushed to disk -- see
+materialize_textvqa_images.py's docstring for the fuller writeup of the
+same underlying race). Sidestepped by calling os._exit() immediately
+after a successful run.
 """
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent.parent
@@ -98,3 +112,7 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # see the module docstring -- skips the interpreter-finalization sequence where
+    # the HF datasets streaming client's background thread can race teardown; every
+    # file is already flushed to disk by the time main() returns successfully
+    os._exit(0)
