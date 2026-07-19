@@ -1,0 +1,80 @@
+{
+  "tag": "p4_pope_kaggle_gpu_keep0.1",
+  "tag_prefix": "p4_pope_kaggle_gpu",
+  "timestamp": "20260719-072521",
+  "visual_keep": 0.1,
+  "visual_prune_method": "cls",
+  "platform_tag": "kaggle-gpu-tesla-p100-pcie-16gb",
+  "mode": "server",
+  "llama_cpp": {
+    "build_provenance": {
+      "bin_path": "/kaggle/working/llama.cpp-prune/build/bin/llama-mtmd-cli",
+      "bin_version_string": "version: 1 (82f2ccb)",
+      "bin_commit_short": "82f2ccb",
+      "bin_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_commit": "82f2ccb5cc4c12f610726c71a6f941c64e11daac",
+      "repo_head_branch": "visual-token-pruning",
+      "repo_head_matches_binary": true,
+      "source_of_truth": "bin_commit, parsed from the binary's own --version output. repo_head_commit is the llama.cpp checkout's HEAD at record time and may legitimately differ if the tree moved on after this binary was built; it is recorded so any mismatch is visible, not hidden."
+    },
+    "build": "cmake -DCMAKE_BUILD_TYPE=Release -DGGML_CUDA=ON -DGGML_CUDA_NO_VMM=ON (offloaded, -ngl 999, Tesla P100-PCIE-16GB)",
+    "model": "/kaggle/working/models/llava-v1.5-7b-Q4_K_M.gguf",
+    "mmproj": "/kaggle/working/models/llava-v1.5-7b-mmproj-model-f16.gguf",
+    "config": "-n 16 --temp 0 --seed 42 -t 8 -tb 8 -b 2048 -ub 1024, custom vicuna_v1 jinja, 'Please answer yes or no.' suffix, extra_args=['-ngl', '999']"
+  },
+  "dataset": "pinned POPE subset (assets/phase1/pope300_manifest.jsonl or as configured)",
+  "metric": "POPE standard: accuracy/precision/recall/F1/yes-ratio on the binary yes/no classification, parsed from the first word of the response",
+  "n_scored": 300,
+  "n_failed": 0,
+  "overall": {
+    "n": 300,
+    "accuracy": 0.8233333333333334,
+    "precision": 0.9532710280373832,
+    "recall": 0.68,
+    "f1": 0.7937743190661478,
+    "yes_ratio": 0.3566666666666667,
+    "tp": 102,
+    "fp": 5,
+    "fn": 48,
+    "tn": 145
+  },
+  "per_category": {
+    "adversarial": {
+      "n": 100,
+      "accuracy": 0.8,
+      "precision": 0.8947368421052632,
+      "recall": 0.68,
+      "f1": 0.7727272727272727,
+      "yes_ratio": 0.38,
+      "tp": 34,
+      "fp": 4,
+      "fn": 16,
+      "tn": 46
+    },
+    "popular": {
+      "n": 100,
+      "accuracy": 0.84,
+      "precision": 1.0,
+      "recall": 0.68,
+      "f1": 0.8095238095238095,
+      "yes_ratio": 0.34,
+      "tp": 34,
+      "fp": 0,
+      "fn": 16,
+      "tn": 50
+    },
+    "random": {
+      "n": 100,
+      "accuracy": 0.83,
+      "precision": 0.9714285714285714,
+      "recall": 0.68,
+      "f1": 0.8,
+      "yes_ratio": 0.35,
+      "tp": 34,
+      "fp": 1,
+      "fn": 16,
+      "tn": 49
+    }
+  },
+  "preds_file": "results/raw/p4_pope_kaggle_gpu_keep0.1.preds.jsonl"
+}
