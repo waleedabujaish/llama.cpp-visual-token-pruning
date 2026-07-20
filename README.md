@@ -20,6 +20,8 @@ Everything is pinned to llama.cpp commit
 `analysis/code-drift-check.md`; raw measurement JSONs (with config, file
 hashes, and per-run values) in `results/`.
 
+Project plan, hypotheses, and current status: [`PLAN.md`](PLAN.md).
+
 ## Reproducing the bug verification from a fresh clone
 
 Prerequisites: Python 3.10+, cmake, ~11 GB disk (llama.cpp build + models +
