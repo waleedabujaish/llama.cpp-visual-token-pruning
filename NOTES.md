@@ -31,7 +31,9 @@ quant used here: Q4_K_M; mmproj: F16.
 
 ## llama.cpp build (pinned)
 
-- Commit `e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`, clean tree.
+- Commit `e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`, clean tree (tree state
+  not recorded in the G0 result JSON — explicit provenance fields were only
+  added to later runs).
 - `cmake -DCMAKE_BUILD_TYPE=Release -DGGML_METAL=OFF`; target `llama-mtmd-cli`.
 - Resulting backends: CPU (`-mcpu=native+dotprod+i8mm+nosve+sme`) +
   BLAS via Apple Accelerate. No Metal, no GPU.
@@ -107,7 +109,8 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
   (`scripts/phase1/dump_llamacpp_embd.py`); layouts transcribed from headers
   at commit e8f19cc0 and validated at runtime against
   `mtmd_context_params_default()`; dump cross-validated against the CLI's
-  `MTMD_DEBUG_EMBEDDINGS` output (token-0 values identical to 6 decimals).
+  `MTMD_DEBUG_EMBEDDINGS` output (token-0 values identical to 6 decimals;
+  checked in-session, comparison output not archived).
 - Bug-verification input: `assets/phase1/cat_336.png` (336×336 PNG, lossless,
   resize no-op on both pipelines; sha256
   `e42c7ea7c89d69541a7ab27ebdcf75272790529be5e59c759150a17021e561c0`).
@@ -165,12 +168,14 @@ All timings are llama.cpp's own internal measurements, parsed from the run log
 - Timing: raw deltas vs the cold G0 baseline are thermally inflated (all
   configs' prefill drifted +6-10%); against a same-session warm master
   control (p2_bench_master_warm): fix-A encoder −1.8% (noise), fix-B +5.9%,
-  combined +5.3% (predicted ~+4.5%), decode flat ±3%.
+  combined +5.3% (predicted ~+4.5%), decode flat within ±3.5%.
 - End-task (paired fixed-vs-unfixed, same 200 samples, same Q4_K_M + F16
   files, p2_textvqa_*): fixed 54.95 vs unfixed 56.35, diff −1.40pp,
   bootstrap 95% CI [−4.65, +1.70], 8/9/183 wins/losses/ties — statistically
   zero; the OCR-assisted benchmark barely reacts to feature quality in
-  either direction (matches the earlier unfixed-vs-HF null). PR case rests
+  either direction (direction-consistent with the earlier unfixed-vs-HF
+  null, itself additionally confounded with Q4_K_M quantization and image
+  preprocessing). PR case rests
   on representation-level correctness; a no-OCR or grounding-task rerun is
   the designated follow-up if an end-task number is wanted.
 - Fix-B non-regression, proven empirically (p2_fixB_nonregression_glm_edge):
@@ -269,7 +274,9 @@ recorded as a secondary field (`repo_head_commit`,
 `repo_head_matches_binary`) so a future mismatch is visible in the JSON
 instead of silently wrong. Verified against all four build dirs
 (`build`, `build-fixA`, `build-fixB`, `build-both`) — each binary
-self-reports exactly the commit its directory name implies.
+self-reports exactly the commit its directory name implies (the
+build/build-both halves are on record in result JSONs; the fixA/fixB
+checks were in-session only, not archived).
 
 Not retroactively fixed: `results/20260717-163502_p2_textvqa_llamacpp_fixed.json`
 and siblings from the earlier session carry the old hardcoded
@@ -282,12 +289,14 @@ file directly.
 
 First two re-baseline attempts (`results/20260717-234532_g2_baseline_fixed.json`,
 `results/20260717-235252_g2_baseline_fixed_clean.json`, both build-both,
-no cooldown) showed run1 near G0's numbers (~5300-5600ms prompt-eval) then
-climbing and staying elevated (~6700-7200ms) for runs 2-6, with `uptime`
-load average roughly tripling (2.2 -> 7.7) over each ~90s / 7-invocation
-block. A same-session unfixed control
+no cooldown) showed the discarded warmup invocation near G0's numbers
+(5392/5421ms prompt-eval) with every timed run already elevated (run1
+6192/5623ms, runs 2-6 spanning ~6076-7186ms), and the `uptime` 1-min
+load average climbing steeply within each ~90s / 7-invocation block
+(2.27 -> 7.72 and 2.36 -> 6.57). A same-session unfixed control
 (`results/20260717-234854_g2_baseline_unfixed_control.json`) run
-immediately after showed the identical pattern, ruling out "it's something
+immediately after showed the identical pattern (prompt-eval 6090-7465ms
+across its six runs, load 3.48 -> 7.52), ruling out "it's something
 about the fixed build" — this is sustained `-t 8` thermal throttling on
 the M4 Pro, worse today than during either G0 or the 16:31 session (both
 of which had natural gaps between blocks from interactive command entry;
@@ -295,8 +304,10 @@ today's back-to-back automated blocks gave the CPU no recovery time).
 
 Fix: added `--cooldown-s` to `bench_baseline.py` (sleep between every
 invocation, including after warmup). A 30s cooldown eliminated the drift
-almost entirely — see the `_cooled` results below, std dropped from
-~70-90ms to ~1-12ms on encode/prompt-eval. Adopt `--cooldown-s 30` (or
+almost entirely — see the `_cooled` results below: on the cooled fixed
+block, std dropped from ~67-90ms (encode) and ~310-590ms (prompt-eval)
+to ~1ms and ~12ms respectively (the cooled unfixed control carries one
+isolated outlier run, discussed below). Adopt `--cooldown-s 30` (or
 longer) for the keep-ratio sweep, which will run far more back-to-back
 cells than this baseline did.
 
@@ -364,9 +375,12 @@ increasing rigor:
 3. Same session, outlier excluded as a sensitivity check (n=5 unfixed vs
    n=6 fixed): encoder +4.21%, TTFT_llm +0.07%.
 
-Triangulated: fix-B costs roughly +4-5% encoder time (one extra ViT layer
-of compute), and, as physically expected, does not measurably change
-TTFT_llm (the LLM prefill consumes whatever embeddings the encoder
+Triangulated: fix-B costs roughly +4-6% encoder time (+4.2%, +5.3%, +5.9%
+across the three usable same-session pairings: cooled outlier-excluded,
+combined-build warm, fix-B-alone warm; one extra ViT layer of compute),
+and TTFT_llm shows no change separable from session variance (+0.1%,
++2.0%, +1.8% across the same pairings — physically ~0 expected: the LLM
+prefill consumes whatever embeddings the encoder
 produced; how many vision layers computed them is invisible to it). The
 correctness fixes are a real but small encoder-side cost, not a prefill
 cost.
@@ -433,6 +447,10 @@ Before trusting `np.array_equal` as the Gate 1 operator, confirmed the
 CPU vision encode is deterministic run-to-run at `-t 8`: encoded
 `cat_336.png` twice on pristine build-both, `np.array_equal` = True, max
 abs diff = 0.0. `np.array_equal` is a sound bit-identity test here.
+(The original 2026-07-18 dumps were not archived — a gap found in the
+2026-07-20 audit; the check was re-run and archived the same day with an
+identical bitwise PASS: `results/20260720-214857_gate1_bitwise_cpu.json`,
+dumps under `results/raw/20260720-214857_gate1_bitwise_cpu/`.)
 
 ### Gate 1: keep=1.0 bit-identity — PASS
 
@@ -448,10 +466,15 @@ silently misalign every field from `cb_eval` onward if pointed at
   `--visual-prune-method none` and `cls` — the gate only requires
   `visual_keep < 1.0`, so both should no-op): `np.array_equal` = True,
   max abs diff = 0.0, in both cases.
-  (`results/raw/.../pristine_run1.npy` vs `prune_keep1.npy`/`prune_keep1_cls.npy`.)
+  (The original 2026-07-18 dumps were not archived — a gap found in the
+  2026-07-20 audit; the check was re-run and archived the same day via
+  `scripts/phase1/gate1_bitwise_archive.py`, again PASS bitwise in both
+  cases plus the Gate 0.5 determinism pair:
+  `results/20260720-214857_gate1_bitwise_cpu.json`, npy dumps under
+  `results/raw/20260720-214857_gate1_bitwise_cpu/`.)
 - Timing (cooled, n=5, `--cooldown-s 30`): pristine build-both encode
   721.4±7.7ms / prompt_eval 5306.3±15.7ms; build-prune@keep=1.0 encode
-  711.0±1.6ms / prompt_eval 5351.9±25.1ms. Delta -1.44% encode, +0.86%
+  711.0±1.6ms / prompt_eval 5351.9±25.0ms. Delta -1.44% encode, +0.86%
   prefill — within noise, no systematic direction. Identical generated
   text at temp=0 on both.
   (`results/20260718-024601_gate1_timing_build_both_pristine.json`,
@@ -492,7 +515,8 @@ test (K rows), then nearest-neighbor-match each pruned row back to its
 source row (the MLP projector is token-independent, so a kept row's
 value is bit-for-bit the same computation as its keep=1.0 counterpart).
 Match quality confirmed unambiguous throughout: nearest-match distance
-was 9-53% of the second-nearest distance in every one of 15 cells (never
+was 9-53% of the ambiguity margin (second-nearest minus nearest, as
+`gate2_kept_index_parity.py` defines it) in every one of 15 cells (never
 close to ambiguous).
 
 Python reference: `hf_reference.Ref.tower(cls_first=True, n_layers=23,
@@ -523,9 +547,11 @@ branch / top-K / gather) is doing something wrong":
   already had cosine <0.98 (many far lower — as low as 0.055-0.90)
   between C++ and Python **at keep=1.0**, i.e. before any pruning code
   runs at all. This is the *same* phenomenon Phase 1 already documented
-  (`hf_reference.py`'s docstring: "F16 mmproj + FA fp16 K/V casts + ggml
-  quick-gelu LUT vs fp32 reference keeps even the true-matching variant
-  at ~0.998-0.999 mean cosine, not 1.0") — a mean cosine in that range is
+  (the "Expected numerical floor" note in this file's Phase 1 provenance
+  section: F16 mmproj + FA fp16 K/V casts + ggml quick-gelu LUT vs fp32
+  reference keeps even the true-matching variant at ~0.998-0.999 mean
+  cosine, not 1.0 — previously misattributed here to `hf_reference.py`'s
+  docstring) — a mean cosine in that range is
   exactly what a small number of very-low-cosine outlier tokens averaged
   with hundreds of near-perfect ones produces. Confirmed this isn't a
   pruning-branch artifact: Gate 1 already proved build-prune@keep=1.0 is
@@ -533,7 +559,7 @@ branch / top-K / gather) is doing something wrong":
   *is* a statement about the fixed graph itself, independent of the
   pruning branch.
 - **11/78 (14%) not cleanly classified**: high embedding cosine at
-  keep=1.0 (0.988-0.9995, ruling out the "already-diverged token" bucket)
+  keep=1.0 (0.988-0.9996, ruling out the "already-diverged token" bucket)
   but a score gap larger than the tie threshold. Plausible read: the raw
   attention-probability score is a narrower, per-head-then-averaged
   quantity and may be more sensitive to small cross-implementation
@@ -608,7 +634,9 @@ session). Raw per-cell JSONs: `results/*_p2_sweep_keep*.json`. Analysis:
 
 **Headline:** TTFT_llm speedup 1.0x -> 5.25x (keep=1.0 -> 0.05), realizing
 88-100% of the theoretical ceiling (H1: linear-in-token-count prefill
-scaling) at every ratio tested. TTFT_vlm falls monotonically throughout
+scaling) at every ratio in this main {1.0..0.05} range (the later
+sub-0.05 extension cells realize 73-80% — see the H2 sections below).
+TTFT_vlm falls monotonically throughout
 the tested range - no break-even where pruning overhead exceeds savings
 was observed (H2 candidate not located within {1.0..0.05}; if a
 break-even exists it's below keep=0.05, not reached here). Encoder share
@@ -688,9 +716,12 @@ directly from the committed JSON before writing this):
   per the plan's own falsifiability rule, reported as refuted, not
   glossed over. (Note: I could not locate that exact prediction in the
   current `vtp-cpu-plan-v2.md` - see that file's own update for the
-  discrepancy.) This prediction appeared in the original project plan
-  (pre-v2 rewrite) and was dropped during a later plan revision; recorded
-  here for full provenance.
+  discrepancy.) The prediction's origin could not be pinned down
+  (2026-07-20 audit): it is not in the current plan text, the plan files
+  were never git-tracked, and `git log -S` finds no committed version
+  containing the quoted phrase - most likely an earlier local draft or a
+  planning conversation not captured in the repo. Recorded with that
+  uncertainty rather than asserting a source.
 
 ## Sweep extension for H2 (2026-07-18)
 
@@ -713,11 +744,12 @@ higher: keep=0.03 -> 2566.0ms (+52%), keep=0.02 -> 2024.3ms (+20%),
 keep=0.015 -> 2393.2ms (+42%), keep=0.01 -> 2068.2ms (+22%).
 
 **Established:** thermal/background-load confounds are ruled out -
-`load_avg_1_5_15_at_start/end` stayed flat (~1.9-2.4) across all 4 new
-cells, no drift signature like the earlier keep=1.0 cell. Run-to-run
-variance genuinely explodes at this token scale: encode_ms std jumps from
-±1-6ms (every cell down to keep=0.05) to ±65-117ms; prompt_eval std to
-±261-503ms.
+`load_avg_1_5_15_at_start/end` stayed flat (~1.9-2.8; final reading 2.77)
+across all 4 new cells, no drift signature like the earlier keep=1.0
+cell. Run-to-run variance genuinely explodes at this token scale:
+encode_ms std jumps from ±1-6ms (every pruned cell, keep 0.75-0.05; the
+keep=1.0 cell sat at ±32ms from its own load drift) to ±65-117ms;
+prompt_eval std to ±261-503ms.
 
 **Not established:** that the mean's rise reflects H2's actual mechanism
 - pruning-branch overhead (scoring/top-K/gather) genuinely exceeding the
@@ -732,7 +764,8 @@ not what a smooth compute-overhead mechanism would produce), and the best
 individual runs at keep=0.02 (1630ms) and keep=0.01 (1576ms) actually
 undercut keep=0.05's mean (1690.5ms) entirely. A genuine algorithmic
 break-even should show a comparatively tight, monotonic rise past the
-turning point, the way the K>=29 decline itself was tight (±1-6ms); what's
+turning point, the way the K>=29 decline itself was tight (±1-6ms encoder
+std over the pruned K=29-432 cells); what's
 observed instead - wide, non-monotonic, with the "good" tail overlapping
 the pre-turnaround floor - is the signature of a noise-dominated regime,
 not a resolved one. Did not run additional repeats to settle this (matches
@@ -814,7 +847,8 @@ at `f211e51`.
 - **`local-test-both` had never been pushed to `origin`** (this file
   already says so, "Fix verification session" above: "local-only octopus
   merge, never pushed"). The first workflow run failed after 38s at the
-  checkout step for exactly this reason - the branch didn't exist on the
+  checkout step (per the GitHub Actions run history; not archived
+  in-repo) for exactly this reason - the branch didn't exist on the
   remote for `actions/checkout` to resolve. Fixed by pushing the
   existing, already-validated local branch to `origin` - no code change,
   no new commit; same SHA that Gate 1/Gate 2 on M4 already validated.
@@ -857,7 +891,7 @@ here, but the estimate itself is still a small fraction of encode_ms
 were run on this platform, so there's no "extended fit" to compare
 against, unlike the M4 H2-extension section above).
 
-**Decode speed**: 4.31 -> 4.70 tok/s (+9.0%) from keep=1.0 to keep=0.05,
+**Decode speed**: 4.31 -> 4.70 tok/s (+9.1%) from keep=1.0 to keep=0.05,
 monotonic except the last step (keep=0.05's 4.7042 sits fractionally
 below keep=0.1's 4.7103 - within noise). Same direction as the M4 finding
 (+21.4% there), smaller magnitude here. Plausible contributors to the
@@ -868,10 +902,12 @@ distinguished; reported as direction-consistent, not as a comparable
 ratio.
 
 **Fraction of theoretical ceiling (H1)**: 77.8-81.7% here across keep
-0.75-0.05, vs 87.8-93.4% on M4 at the same ratios. A real, meaningfully
-sized gap - but this run sat on a shared GitHub Actions runner with a
-rising load average (`load_avg_1_5_15`: 5.53 -> 7.20 over the course of
-the sweep, recorded in every result JSON's `environment` block), while
+0.75-0.05, vs 87.8-99.9% on M4 at the same ratios (99.9% is M4's
+keep=0.75 cell, where the platform gap is widest). A real, meaningfully
+sized gap - but this run sat on a heavily loaded shared GitHub Actions
+runner (1-min `load_avg` 5.5-7.2 throughout: 5.53 at sweep start, peaking
+at 7.20 after the first cell, 7.02 at the end - recorded in every result
+JSON's `environment` block), while
 the M4 runs were on a dedicated, otherwise-idle machine. Contention on a
 shared runner could suppress the achieved fraction of ceiling below what
 a dedicated x86 box would show, independent of anything about the x86
@@ -963,7 +999,7 @@ config-cell reasoning), same 6 ratios, `-ngl 999`.
 `results/p2_sweep_kaggle_gpu_analysis.json`.
 
 **H1, answered.** Fraction of theoretical ceiling on GPU is 43.5-67.7%,
-substantially below M4's 87.8-93.4% and x86's 77.8-81.7% at the same
+substantially below M4's 87.8-99.9% and x86's 77.8-81.7% at the same
 ratios. This is exactly the pre-registered H1 prediction
 (`vtp-cpu-plan-v2.md` §1: "dispatch overhead should make pruning capture
 less of its theoretical benefit" on GPU) - confirmed, not just plausible.
@@ -980,19 +1016,21 @@ isn't investigated further here; flagged, not explained away.
 **Prune-overhead fit**: A=143.98ms, B=0.00896ms/token, R²=0.945,
 max|residual|=0.56ms - a tight fit. Fitted encode_ms at K=576: 149.14ms;
 measured keep=1.0: 141.2ms; scoring+selection overhead: **+7.94ms**.
-Unlike both CPU platforms (where the overhead estimate was negative and
-noise-dominated, magnitude smaller than the keep=1.0 cell's own std),
+Unlike both CPU platforms (where the estimate was negative and not
+separable from noise - on M4 comparable to the keep=1.0 cell's own ±32ms
+std, on x86 a ~1% fraction of total encode time),
 this is **positive and likely a real, resolvable signal**: residual std
 here is 0.33ms, more than an order of magnitude smaller than the 7.94ms
 estimate itself. Reading: GPU's much smaller absolute encode_ms
-(~141-149ms vs CPU's ~660-740ms) makes the same fixed-cost scoring/top-K/
+(~141-149ms vs M4's ~660-743ms and x86's ~2067-2183ms) makes the same
+fixed-cost scoring/top-K/
 gather branch a proportionally larger and more measurable fraction of
 total time here, rather than the branch itself costing more in absolute
 terms.
 
 **Decode speed**: 42.89 -> 43.83 tok/s (+2.2%) from keep=1.0 to
 keep=0.05, direction-consistent with both CPU platforms (M4: +21.4%,
-x86: +9.0%) but much smaller. Same mechanism read as the ceiling-fraction
+x86: +9.1%) but much smaller. Same mechanism read as the ceiling-fraction
 finding: GPU attention over the KV cache is already fast and parallel,
 so fewer image tokens occupying it matters much less than it did on
 CPU's more serially-bottlenecked decode path.
@@ -1029,6 +1067,13 @@ comparison, 10000 resamples, 95% CI), vs the keep=1.0 baseline:
 | 0.10 | -1.80pp | [-6.00, +2.35]pp | 9 | 16 | 175 |
 | 0.05 | -2.70pp | [-7.65, +2.20]pp | 12 | 19 | 169 |
 
+(Archived 2026-07-20:
+`results/20260720-215027_p3_textvqa_kaggle_gpu_paired_bootstrap.json`,
+written by `scripts/phase1/textvqa_paired_bootstrap.py`. The original
+in-session computation was not saved - an audit-found gap; the archived
+recomputation from the committed preds files reproduces this table
+exactly at seed 42, numpy default_rng, 10000 resamples.)
+
 **None of the six ratios show a statistically significant accuracy
 difference from keep=1.0 at n=200** - every CI crosses zero, including
 the most aggressive ratio (keep=0.05). The loss/win split does lean
@@ -1043,32 +1088,39 @@ C++ path, closing the PENDING item `vtp-cpu-plan-v2.md` §3/§4 flagged
 after the M4 sweep's single-image hallucination finding raised its
 priority.
 
-**Qualitative degradation reproduces identically across all three
-platforms.** Same single-image test (COCO cats) used for the latency
-sweep: byte-identical generated text to M4/x86 at every ratio, including
-the same hallucination at keep=0.05 - "The image features a couch with
-two remote controls placed on it" in place of the two cats, on GPU too.
-This is a real cross-platform consistency finding, not just a repeated
-observation: the qualitative failure mode is a property of the pruning
-method/ratio itself, not a numerical artifact specific to any one
-backend's kernels.
+**Qualitative check across platforms (corrected 2026-07-20 - the
+original version of this paragraph claimed byte-identity at every ratio,
+which the committed sweep JSONs contradict).** Same single-image test
+(COCO cats) as the latency sweep. The keep=0.05 hallucination - "The
+image features a couch with two remote controls placed on it" in place
+of the two cats - IS byte-identical on all three platforms, so that
+specific failure mode is a property of the pruning ratio, not of any one
+backend's kernels. Full byte-identity across platforms, however, holds
+ONLY at keep=0.05 (1 of 6 ratios): comparing `generated_text_first_run`
+across the committed per-cell JSONs, GPU differs from both CPU platforms
+at keep=1.0 (with no pruning code active at all), x86 differs at
+keep=0.75/0.5/0.25, and GPU differs at keep=0.1 - same scene, different
+phrasings. Cross-platform generation is backend-sensitive in general;
+the parity section below quantifies that properly over 200 samples.
 
 Full data: `results/*_p3_textvqa_kaggle_gpu_keep*_summary.json`,
-`results/raw/p3_textvqa_kaggle_gpu_keep*.preds.jsonl`.
+`results/raw/p3_textvqa_kaggle_gpu_keep*.preds.jsonl`,
+`results/20260720-215027_p3_textvqa_kaggle_gpu_paired_bootstrap.json`.
 
 ## CPU-vs-GPU accuracy parity spot-check (M4, 2026-07-19)
 
-The single-image latency test showed byte-identical generated text across
-M4/x86/GPU at every ratio (including the same keep=0.05 hallucination) -
-but that was one image, one sample. This checks whether that holds
-systematically: a local M4 run of `textvqa_keep_sweep.py` on the SAME
+The single-image latency test showed the keep=0.05 hallucination
+reproducing byte-identically across M4/x86/GPU (full text identity held
+only at that ratio - see the corrected paragraph above), and that was
+one image, one sample. This checks backend agreement systematically: a
+local M4 run of `textvqa_keep_sweep.py` on the SAME
 pinned 200-sample manifest and 6 ratios as the Kaggle GPU run (server
 mode throughout - equivalence probe passed, consistent with Gate 0.5's
 already-established CPU determinism), compared per-sample against the
 already-committed GPU results via a new script,
 `textvqa_cpu_gpu_parity.py`.
 
-### Aggregate accuracy: close, non-directional
+### Aggregate accuracy: close, mild GPU lean well inside noise
 
 | keep | CPU acc | GPU acc | diff (GPU-CPU) |
 |---|---|---|---|
@@ -1081,9 +1133,10 @@ already-committed GPU results via a new script,
 
 Max difference 1.20pp, well inside the per-cell noise floor already
 established for this manifest size (n=200, ~±3.5pp SE - see the GPU
-sweep's own paired-bootstrap section above), and not consistently
-favoring either platform (GPU higher at 3 ratios, CPU higher at 2, tied
-at 1).
+sweep's own paired-bootstrap section above). GPU is nominally higher at
+4 ratios, CPU at 1, tied at 1 (corrected 2026-07-20; previously
+miscounted as 3/2/1) - a mild GPU-ward lean, with every difference well
+inside the noise floor.
 
 ### Per-sample text agreement: high, and it's the real content that agrees
 
@@ -1104,22 +1157,22 @@ difference, not superficial formatting noise.
 
 Match rate decreases as keep ratio drops - even at keep=1.0 (no pruning
 code active at all) 3/200 samples differ between CPU and GPU, though
-none of those 3 flip correctness. This refines, rather than contradicts,
-the single-image "byte-identical across all three platforms" finding:
-that held for the one sample actually checked, but does not generalize
-to "always byte-identical" - a small, growing-with-pruning-aggressiveness
+none of those 3 flip correctness. This matches the corrected
+single-image finding above (cross-platform byte-identity held only at
+keep=0.05, even for that one sample) - a small,
+growing-with-pruning-aggressiveness
 fraction of samples do diverge, consistent with floating-point/kernel
 differences between backends becoming more consequential as fewer tokens
 carry more relative weight in the generation.
 
 **22 correctness-divergent samples total across 1200 comparisons (~1.8%)**
 - every one inspected, not just counted (`results/20260719-002506_p3_textvqa_cpu_gpu_parity.json`
-  has all 22 with both predictions and both raw scores). Roughly balanced
-  in direction per ratio (e.g. keep=0.75: 3 CPU-right/GPU-wrong vs 2
-  GPU-right/CPU-wrong; keep=0.05: 2 vs 3) - this is *why* the aggregate
-  scores stay close despite real per-sample divergence: the errors
-  partially cancel in the mean rather than one platform being
-  systematically more accurate. Nature of the divergences: mostly
+  has all 22 with both predictions and both raw scores). Direction split:
+  9 CPU-right/GPU-wrong vs 13 GPU-right/CPU-wrong overall (per ratio 3v2 /
+  1v2 / 2v3 / 1v3 / 2v3 for keep 0.75/0.5/0.25/0.1/0.05) - partial
+  cancellation is *why* the aggregate scores stay close despite real
+  per-sample divergence: the errors largely offset in the mean rather
+  than one platform being systematically more accurate. Nature of the divergences: mostly
   plausible near-miss OCR-style errors on both sides ("3.99" vs "3.82",
   "648" vs "648-home", "2012" vs "2010", "Honey maid" vs "Hershey's") -
   not wild hallucinations, consistent with small numerical differences
@@ -1130,13 +1183,17 @@ carry more relative weight in the generation.
   different ratios, not a stable per-platform bias.
 
 **Bottom line: aggregate accuracy parity holds cleanly; per-sample
-generation parity does not, but the divergence is small, non-directional,
+generation parity does not, but the divergence is small, only mildly
+directional (9v13 split, every aggregate diff inside the noise floor),
 and made of plausible near-misses, not qualitatively different failures.**
 The GPU accuracy numbers in the section above are a fair characterization
 of the pruning method's behavior, not an artifact of measuring on a
 different backend than CPU.
 
 Full data: `results/*_p3_textvqa_m4_cpu_keep*_summary.json`,
+`results/20260720-215027_p3_textvqa_m4_cpu_paired_bootstrap.json`
+(paired bootstrap vs keep=1.0 on the M4 preds, archived 2026-07-20 —
+every CI crosses zero here too),
 `results/raw/p3_textvqa_m4_cpu_keep*.preds.jsonl`,
 `results/20260719-002506_p3_textvqa_cpu_gpu_parity.json`.
 
@@ -1154,11 +1211,15 @@ correctly skipped rather than re-run - because the results from the
 first session were already committed to the repo, and `sweep_prune.py`'s
 resumability check found them in the freshly-cloned checkout itself, not
 a leftover working directory. Verified byte-identical to what was
-already committed before trusting the skip. Gate 0.5/Gate 1 have no such
+already committed before trusting the skip (an in-session check -
+`sweep_prune.py`'s own skip logic is existence-only and no comparison
+log was archived). Gate 0.5/Gate 1 have no such
 skip logic (by design - they're meant to re-verify every run) and did
 re-execute, producing `.npy` embeddings **bitwise identical** to the
-first session's - a real cross-session determinism confirmation that
-fell out of the resumability design rather than being a dedicated check.
+first session's (compared in-session; the second session's dumps were
+not separately archived, so disk holds one copy) - a cross-session
+determinism observation that fell out of the resumability design rather
+than being a dedicated, archived check.
 
 **Pre-registered prediction (stated before running): a cleaner
 break-even than CPU's noise-dominated pattern.** This did not hold in
@@ -1174,7 +1235,8 @@ its clean form.
 
 What actually happened: TTFT_vlm's mean stays close to flat from
 keep=0.1 (732.3ms) through keep=0.015 (727.8ms) - only shallow drift
-despite `n_prompt_tokens` dropping from 58 to 26 over that range - then
+despite K_image_tokens dropping from 58 to 9 (`n_prompt_tokens` 75 to
+26) over that range - then
 **drops sharply at keep=0.01** to 572.5ms, lower than every other cell
 including keep=0.05's 720.6ms. Traced to which component: `encode_ms`
 stays flat throughout this whole range (144-154ms, consistent with the
@@ -1198,9 +1260,10 @@ is not simply "the same fixed cost as a larger fraction of a smaller
 total."
 
 **Not the same failure mode as CPU's noise-dominance, either.** CPU's
-H2 extension showed run-to-run std ballooning from ±1-6ms to ±65-117ms
-below keep=0.05 - a clear signature of OS-scheduling noise becoming
-dominant. Here, std stays tight throughout (9-20ms) at every ratio,
+H2 extension showed run-to-run TTFT_vlm std ballooning to ±307-576ms
+below keep=0.05 (encoder std ±1-6ms -> ±65-117ms) - a clear signature of
+OS-scheduling noise becoming dominant. Here, TTFT_vlm std stays tight
+throughout (±9-20ms) at every ratio,
 including keep=0.01 - the *mean* moves in a way that isn't smooth, but
 the individual measurements within each cell remain precise. This is a
 third, distinct pattern from both the pre-registered break-even and
@@ -1284,3 +1347,41 @@ the unpruned baseline.
 
 Full data: `results/*_p4_pope_kaggle_gpu_keep*_summary.json`,
 `results/raw/p4_pope_kaggle_gpu_keep*.preds.jsonl`.
+
+## Corrections from the pre-submission audit (2026-07-20)
+
+A full cross-check of every claim in this file and `vtp-cpu-plan-v2.md`
+against the committed `results/` artifacts was run ahead of the write-up.
+No measured value changed. Corrections were applied in place above (the
+originals are in git history); the material ones:
+
+- Cross-platform byte-identity of the single-image generation held only
+  at keep=0.05, not "at every ratio" - GPU differed from both CPUs even
+  at keep=1.0. The "Qualitative check across platforms" paragraph and the
+  parity section's references to it were rewritten.
+- The M4 fraction-of-ceiling range quoted in cross-platform comparisons
+  was 87.8-93.4%; the correct range over keep 0.75-0.05 is 87.8-99.9%
+  (the old range silently dropped keep=0.75's 99.9% cell).
+- Parity direction counts corrected: GPU nominally higher at 4 ratios
+  (not 3), and the 9-vs-13 correctness-divergence split is now stated.
+- The GPU-section claim that both CPU overhead estimates were "smaller
+  than the keep=1.0 cell's own std" was wrong on both platforms; the
+  uncooled-baseline narrative had quoted warmup values as run1 values.
+  Both rewritten from the per-run data.
+- The sub-0.05 CPU-vs-GPU noise contrast now compares like metrics
+  (TTFT_vlm std ±307-576ms vs ±9-20ms); the conclusion is unchanged.
+- A quote previously attributed to `hf_reference.py`'s docstring is this
+  file's own Phase 1 note; the memory-prediction provenance claim was
+  softened to what the repo can actually support.
+- Archiving gaps closed or recorded. Closed: the CPU Gate 0.5 / Gate 1
+  bitwise checks were re-run and archived
+  (`results/20260720-214857_gate1_bitwise_cpu.json` + npy dumps, PASS
+  again), and the GPU-accuracy paired bootstrap is archived
+  (`results/20260720-215027_p3_textvqa_kaggle_gpu_paired_bootstrap.json`,
+  plus an M4 counterpart from the parity run's preds). Still recorded as
+  in-session-only: the MTMD_DEBUG_EMBEDDINGS cross-check, the fixA/fixB
+  provenance check, and the second-Kaggle-session comparisons.
+- Minor rounding/labeling fixes: x86 decode +9.0% -> +9.1%; ±25.1 ->
+  ±25.0; 0.9995 -> 0.9996; "second-nearest distance" -> ambiguity margin;
+  x86 load numbers restated from the recorded fields; sub-0.05 load
+  envelope 1.9-2.4 -> 1.9-2.8.

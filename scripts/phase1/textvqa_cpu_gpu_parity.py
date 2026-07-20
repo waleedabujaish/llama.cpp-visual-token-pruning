@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 """CPU-vs-GPU accuracy parity spot-check: aggregate score parity is not the
 same question as generation parity. The single-image latency test showed
-byte-identical output across M4/x86/GPU, but that was one image at temp=0
-with a short prompt -- it doesn't establish that the two backends' kernel
-differences (different reduction order, different fused ops, etc.) produce
-the same generations across a systematic 200-sample set, only that they
-didn't on that one sample.
+byte-identical output across M4/x86/GPU only at keep=0.05 -- at the other
+five ratios the platforms' generations differ (GPU differs from both CPUs
+even unpruned), so the two backends' kernel differences (different
+reduction order, different fused ops, etc.) visibly affect generation even
+on one sample. This measures how much that matters across a systematic
+200-sample set.
 
 Compares a CPU run's textvqa_keep_sweep.py output against the existing GPU
 run's (results/*_p3_textvqa_kaggle_gpu_keep*_summary.json +

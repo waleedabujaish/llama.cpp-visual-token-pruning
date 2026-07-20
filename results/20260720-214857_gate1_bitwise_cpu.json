@@ -1,0 +1,90 @@
+{
+ "tag": "gate1_bitwise_cpu",
+ "timestamp": "20260720-214857",
+ "command": "scripts/phase1/gate1_bitwise_archive.py",
+ "purpose": "re-run and archive the Gate 0.5 / Gate 1 bitwise checks whose original 2026-07-18 dumps were never saved (audit-found gap, closed 2026-07-20)",
+ "binaries": {
+  "pristine_build_both": {
+   "bin_dir": "/Users/waleedabuujaish/Desktop/vtp/llama.cpp-worktree-pristine/build-both-pristine/bin",
+   "version": "version: 10058 (5b9058635)",
+   "has_visual_keep_flag": false
+  },
+  "build_prune": {
+   "bin_dir": "/Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin",
+   "version": "version: 10059 (82f2ccb5c)",
+   "has_visual_keep_flag": true
+  }
+ },
+ "files": {
+  "image": {
+   "path": "assets/phase1/cat_336.png",
+   "sha256": "e42c7ea7c89d69541a7ab27ebdcf75272790529be5e59c759150a17021e561c0"
+  },
+  "model": {
+   "path": "models/llava-v1.5-7b-Q4_K_M.gguf",
+   "sha256": "2687b20ac8b7a23f6c70296d5b1e7f908fef2ce4769ecdebd1bb9503528a75bf"
+  },
+  "mmproj": {
+   "path": "models/llava-v1.5-7b-mmproj-model-f16.gguf",
+   "sha256": "50da4e5b0a011615f77686f9b02613571e65d23083c225e107c08c3b1775d9b1"
+  }
+ },
+ "dump_commands": {
+  "pristine_run1": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/.venv/bin/python3 /Users/waleedabuujaish/Desktop/vtp/vision_tokens/scripts/phase1/dump_llamacpp_embd.py --image /Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/phase1/cat_336.png --out /Users/waleedabuujaish/Desktop/vtp/vision_tokens/results/raw/20260720-214857_gate1_bitwise_cpu/pristine_run1.npy --lib-dir /Users/waleedabuujaish/Desktop/vtp/llama.cpp-worktree-pristine/build-both-pristine/bin",
+  "pristine_run2": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/.venv/bin/python3 /Users/waleedabuujaish/Desktop/vtp/vision_tokens/scripts/phase1/dump_llamacpp_embd.py --image /Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/phase1/cat_336.png --out /Users/waleedabuujaish/Desktop/vtp/vision_tokens/results/raw/20260720-214857_gate1_bitwise_cpu/pristine_run2.npy --lib-dir /Users/waleedabuujaish/Desktop/vtp/llama.cpp-worktree-pristine/build-both-pristine/bin",
+  "prune_keep1_none": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/.venv/bin/python3 /Users/waleedabuujaish/Desktop/vtp/vision_tokens/scripts/phase1/dump_llamacpp_embd.py --image /Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/phase1/cat_336.png --out /Users/waleedabuujaish/Desktop/vtp/vision_tokens/results/raw/20260720-214857_gate1_bitwise_cpu/prune_keep1_none.npy --lib-dir /Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin --pruned-abi --visual-keep 1.0 --visual-prune-method none",
+  "prune_keep1_cls": "/Users/waleedabuujaish/Desktop/vtp/vision_tokens/.venv/bin/python3 /Users/waleedabuujaish/Desktop/vtp/vision_tokens/scripts/phase1/dump_llamacpp_embd.py --image /Users/waleedabuujaish/Desktop/vtp/vision_tokens/assets/phase1/cat_336.png --out /Users/waleedabuujaish/Desktop/vtp/vision_tokens/results/raw/20260720-214857_gate1_bitwise_cpu/prune_keep1_cls.npy --lib-dir /Users/waleedabuujaish/Desktop/vtp/llama.cpp/build-prune/bin --pruned-abi --visual-keep 1.0 --visual-prune-method cls"
+ },
+ "npy_sha256": {
+  "pristine_run1.npy": "4740b09034ab40563cb12f9ec75dc2e2580801f574dd6f99e476aeb47d5b3a16",
+  "pristine_run2.npy": "4740b09034ab40563cb12f9ec75dc2e2580801f574dd6f99e476aeb47d5b3a16",
+  "prune_keep1_cls.npy": "4740b09034ab40563cb12f9ec75dc2e2580801f574dd6f99e476aeb47d5b3a16",
+  "prune_keep1_none.npy": "4740b09034ab40563cb12f9ec75dc2e2580801f574dd6f99e476aeb47d5b3a16"
+ },
+ "checks": {
+  "gate0_5_determinism": {
+   "a": "pristine_run1.npy",
+   "b": "pristine_run2.npy",
+   "shape_a": [
+    576,
+    4096
+   ],
+   "shape_b": [
+    576,
+    4096
+   ],
+   "array_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "gate1_vs_method_none": {
+   "a": "pristine_run1.npy",
+   "b": "prune_keep1_none.npy",
+   "shape_a": [
+    576,
+    4096
+   ],
+   "shape_b": [
+    576,
+    4096
+   ],
+   "array_equal": true,
+   "max_abs_diff": 0.0
+  },
+  "gate1_vs_method_cls": {
+   "a": "pristine_run1.npy",
+   "b": "prune_keep1_cls.npy",
+   "shape_a": [
+    576,
+    4096
+   ],
+   "shape_b": [
+    576,
+    4096
+   ],
+   "array_equal": true,
+   "max_abs_diff": 0.0
+  }
+ },
+ "verdict": "PASS",
+ "raw_dir": "results/raw/20260720-214857_gate1_bitwise_cpu"
+}

@@ -1,0 +1,117 @@
+{
+ "tag": "p3_textvqa_m4_cpu_paired_bootstrap",
+ "timestamp": "20260720-215027",
+ "command": "scripts/phase1/textvqa_paired_bootstrap.py --tag-prefix p3_textvqa_m4_cpu",
+ "method": "paired per-sample soft-VQA score diff vs the keep=1.0 baseline on the pinned 200-sample manifest; percentile bootstrap over the diff vector (10000 resamples, numpy default_rng seed 42); same methodology as the fixed-vs-unfixed comparison in results/20260717-171500_p2_textvqa_paired_fixed_vs_unfixed.json",
+ "provenance_note": "archives the paired-bootstrap analysis quoted in NOTES.md 'GPU platform sweep', which was originally computed in-session on Kaggle (2026-07-18) and not saved -- gap found and closed in the 2026-07-20 audit pass; recomputed here from the committed preds files, which reproduces the quoted table exactly",
+ "source_preds": {
+  "keep1": "results/raw/p3_textvqa_m4_cpu_keep1.preds.jsonl",
+  "keep0.75": "results/raw/p3_textvqa_m4_cpu_keep0.75.preds.jsonl",
+  "keep0.5": "results/raw/p3_textvqa_m4_cpu_keep0.5.preds.jsonl",
+  "keep0.25": "results/raw/p3_textvqa_m4_cpu_keep0.25.preds.jsonl",
+  "keep0.1": "results/raw/p3_textvqa_m4_cpu_keep0.1.preds.jsonl",
+  "keep0.05": "results/raw/p3_textvqa_m4_cpu_keep0.05.preds.jsonl"
+ },
+ "n_samples": 200,
+ "baseline_keep": 1.0,
+ "baseline": {
+  "keep": 1.0,
+  "acc_mean": 0.5445,
+  "acc_ci95": [
+   0.479,
+   0.6095
+  ]
+ },
+ "per_ratio": [
+  {
+   "keep": 0.75,
+   "acc_mean": 0.5475,
+   "acc_ci95": [
+    0.48150000000000004,
+    0.6125
+   ],
+   "baseline_acc_mean": 0.5445,
+   "mean_diff_pp": 0.30000000000000004,
+   "ci95_pp": [
+    -2.5,
+    3.2
+   ],
+   "ci_crosses_zero": true,
+   "wins": 5,
+   "losses": 4,
+   "ties": 191
+  },
+  {
+   "keep": 0.5,
+   "acc_mean": 0.5495,
+   "acc_ci95": [
+    0.48300000000000004,
+    0.6140000000000001
+   ],
+   "baseline_acc_mean": 0.5445,
+   "mean_diff_pp": 0.5,
+   "ci95_pp": [
+    -2.8499999999999996,
+    3.8
+   ],
+   "ci_crosses_zero": true,
+   "wins": 7,
+   "losses": 6,
+   "ties": 187
+  },
+  {
+   "keep": 0.25,
+   "acc_mean": 0.5365000000000001,
+   "acc_ci95": [
+    0.47,
+    0.6005
+   ],
+   "baseline_acc_mean": 0.5445,
+   "mean_diff_pp": -0.8,
+   "ci95_pp": [
+    -4.85,
+    3.0
+   ],
+   "ci_crosses_zero": true,
+   "wins": 9,
+   "losses": 12,
+   "ties": 179
+  },
+  {
+   "keep": 0.1,
+   "acc_mean": 0.5145000000000001,
+   "acc_ci95": [
+    0.447,
+    0.582
+   ],
+   "baseline_acc_mean": 0.5445,
+   "mean_diff_pp": -3.0,
+   "ci95_pp": [
+    -7.199999999999999,
+    1.2
+   ],
+   "ci_crosses_zero": true,
+   "wins": 8,
+   "losses": 17,
+   "ties": 175
+  },
+  {
+   "keep": 0.05,
+   "acc_mean": 0.5145000000000001,
+   "acc_ci95": [
+    0.44849999999999995,
+    0.5820000000000001
+   ],
+   "baseline_acc_mean": 0.5445,
+   "mean_diff_pp": -3.0,
+   "ci95_pp": [
+    -8.0,
+    2.05
+   ],
+   "ci_crosses_zero": true,
+   "wins": 12,
+   "losses": 20,
+   "ties": 168
+  }
+ ]
+}
