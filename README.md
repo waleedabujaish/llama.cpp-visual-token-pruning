@@ -1,26 +1,70 @@
-# Visual token pruning on llama.cpp (CPU) — benchmarks and analysis
+# Visual token pruning in llama.cpp — CPU vs GPU wall-clock study
 
-Measurement and analysis repo for a study of attention-based visual token
-pruning in llama.cpp's multimodal (mtmd) pipeline on CPU. Along the way it
-documents two correctness defects in llama.cpp's LLaVA vision path, verified
-empirically against the HF reference implementation:
+Artifact repository for the paper **"Visual Token Pruning Pays Off More on
+CPU than GPU: A Cross-Backend Wall-Clock Study in llama.cpp"** (preprint
+forthcoming). It contains the measurement harness, every raw result file,
+the analysis scripts, and the methodology log.
 
-- **Bug A** — the [CLS] token is concatenated after the patch embeddings but
-  consumed as if it were first: position embeddings shift by one for every
-  patch, patch 0's output is dropped, and the projected [CLS] output is fed
-  to the LLM as an image token. See `analysis/bug-a-cls-ordering.md`.
-- **Bug B** — the vision layer intended to be skipped is dropped twice (once
-  at GGUF conversion, once at graph build), so features are computed one
-  layer short of `vision_feature_layer = -2` and the last stored layer never
-  runs. See `analysis/bug-b-layer-count.md`.
+## Result in one table
 
-Everything is pinned to llama.cpp commit
-`e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`. Claim provenance is classified in
-`analysis/claims-ledger.md`; per-citation permalinks in
-`analysis/code-drift-check.md`; raw measurement JSONs (with config, file
-hashes, and per-run values) in `results/`.
+Attention-based visual token pruning (`--visual-keep`, FasterVLM-style
+[CLS] ranking) implemented at the encoder–projector boundary of
+llama.cpp's `mtmd` pipeline, measured under one frozen protocol on three
+backends:
 
-Project plan, hypotheses, and current status: [`PLAN.md`](PLAN.md).
+|                                        | M4 Pro (CPU) | x86 Xeon (CPU, shared runner) | Tesla P100 (GPU) |
+|----------------------------------------|:---:|:---:|:---:|
+| LLM prefill speedup at keep=0.05       | 5.25× | 4.00× | 1.98× |
+| Realized fraction of the theoretical prefill reduction | 87.8–99.9% | 77.8–81.7% | 43.5–67.7% |
+| Decode speed gain                      | +21.4% | +9.1% | +2.2% |
+
+Pruning realizes far more of its theoretical benefit on CPU than on the
+tested GPU. TextVQA accuracy (n=200, paired bootstrap) shows no
+statistically detectable change down to keep=0.05 on either backend;
+POPE exposes the degradation mechanism under aggressive pruning
+(precision 90.1%→95.9%, recall 78.7%→62.0% — the model turns
+conservative). Recommended operating point: keep ≥ 0.25.
+
+Implementation branch:
+[`waleedabujaish/llama.cpp@visual-token-pruning`](https://github.com/waleedabujaish/llama.cpp/tree/visual-token-pruning).
+
+## Two llama.cpp bugs found on the way
+
+Establishing a trustworthy baseline surfaced two long-standing defects in
+llama.cpp's LLaVA vision path, each verified against the HuggingFace
+reference implementation and reported upstream with fixes:
+
+- **Bug A — [CLS] ordering.** The class token is concatenated after the
+  patch embeddings but consumed as if it were first: every patch gets its
+  neighbor's position embedding, patch 0's output is dropped, and the
+  projected [CLS] is fed to the LLM as an image token.
+  Issue [ggml-org/llama.cpp#25814](https://github.com/ggml-org/llama.cpp/issues/25814),
+  fix PR [#25844](https://github.com/ggml-org/llama.cpp/pull/25844).
+  Details: `analysis/bug-a-cls-ordering.md`.
+- **Bug B — vision layer count.** The layer meant to be skipped
+  (`vision_feature_layer = -2`) is dropped twice — once at GGUF
+  conversion, once at graph build — so features are computed one layer
+  short and the last stored layer never runs.
+  Issue [ggml-org/llama.cpp#25817](https://github.com/ggml-org/llama.cpp/issues/25817),
+  fix PR [#25845](https://github.com/ggml-org/llama.cpp/pull/25845).
+  Details: `analysis/bug-b-layer-count.md`.
+
+All measurements in the study run on the fixed graph. Everything is
+pinned to llama.cpp commit `e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`.
+
+## Repo layout
+
+- `results/` — timestamped raw JSON for every executed run: exact
+  command, file hashes, per-run values, environment, determinism checks.
+- `scripts/` — benchmark harness, sweep driver, analysis, and the
+  verification/repro scripts.
+- `analysis/` — bug write-ups, claims ledger, citation permalinks,
+  fix-verification protocol.
+- `figures/` — figure-generation scripts and the committed PDFs.
+- `assets/` — pinned test images and evaluation manifests (TextVQA-200,
+  POPE-300), hashes recorded in the result JSONs.
+- `NOTES.md` — methodology log: pinned artifacts, frozen config, timing
+  definitions, caveats. `PLAN.md` — hypotheses and status.
 
 ## Reproducing the bug verification from a fresh clone
 
@@ -57,19 +101,14 @@ cd scripts/phase1
 Expected output: each repro prints the llama.cpp dump matching the
 bug-simulating variant at ~0.998 mean per-token cosine and the intended
 computation at ~0.50 / ~0.95 respectively, plus the [CLS]-row match at
-~0.99999. The multi-tile LLaVA-1.6 variant of the check is
-`scripts/phase1/llava16_check.py` (see `analysis/` for details), and the
-four-variant comparison with verdict logic is `scripts/phase1/compare_embd.py`.
+~0.99999. The keep-ratio sweeps are driven by `scripts/sweep_prune.py`
+(resumable; skips cells already in `results/`).
 
-## Repo layout
+## Citing
 
-- `analysis/` — the two bug write-ups, claims ledger, citation permalinks,
-  fix/verification protocol, and the [CLS]-attention extractability study.
-- `results/` — timestamped raw JSON for every executed run (benchmarks, bug
-  verification, TextVQA accuracy simulations), plus keep-mask visualizations.
-- `scripts/` — CPU TTFT benchmark harness and the phase-1 verification/
-  prototype scripts.
-- `assets/` — pinned test images (hashes recorded in the results JSONs) and
-  the pinned 200-sample TextVQA manifest.
-- `NOTES.md` — methodology record: pinned artifacts, frozen benchmark
-  config, timing definitions, caveats.
+See [`CITATION.cff`](CITATION.cff) (GitHub's "Cite this repository"
+button). Each GitHub release is archived on Zenodo with a DOI.
+
+## License
+
+MIT — see [`LICENSE`](LICENSE).
