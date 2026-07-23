@@ -49,8 +49,9 @@ reference implementation and reported upstream with fixes:
   fix PR [#25845](https://github.com/ggml-org/llama.cpp/pull/25845).
   Details: `analysis/bug-b-layer-count.md`.
 
-All measurements in the study run on the fixed graph. Everything is
-pinned to llama.cpp commit `e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`.
+All measurements in the study were taken with both fixes applied.
+Everything is pinned to llama.cpp commit
+`e8f19cc0ad70a243c8012bf17b4be601abfc8ea2`.
 
 ## Repo layout
 
